@@ -1,0 +1,58 @@
+"filename", "language", "JavaScript", "JSON", "JavaScript JSX", "HTML", "XML", "CSS", "comment", "blank", "total"
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\.eslintrc.cjs", "JavaScript", 20, 0, 0, 0, 0, 0, 0, 1, 21
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\index.html", "HTML", 0, 0, 0, 13, 0, 0, 0, 1, 14
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\package-lock.json", "JSON", 0, 9828, 0, 0, 0, 0, 0, 1, 9829
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\package.json", "JSON", 0, 60, 0, 0, 0, 0, 0, 1, 61
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\postcss.config.js", "JavaScript", 6, 0, 0, 0, 0, 0, 0, 1, 7
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\public\vite.svg", "XML", 0, 0, 0, 0, 1, 0, 0, 0, 1
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\App.jsx", "JavaScript JSX", 0, 0, 261, 0, 0, 0, 8, 19, 288
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\api\especialidadesapi.js", "JavaScript", 174, 0, 0, 0, 0, 0, 8, 17, 199
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\api\historialapi.js", "JavaScript", 101, 0, 0, 0, 0, 0, 10, 13, 124
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\api\medicoapi.js", "JavaScript", 194, 0, 0, 0, 0, 0, 8, 18, 220
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\api\pacienteapi.js", "JavaScript", 142, 0, 0, 0, 0, 0, 7, 14, 163
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\api\reportesApi.js", "JavaScript", 193, 0, 0, 0, 0, 0, 20, 17, 230
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\api\reservaapi.js", "JavaScript", 141, 0, 0, 0, 0, 0, 6, 15, 162
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\assets\react.svg", "XML", 0, 0, 0, 0, 1, 0, 0, 0, 1
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\components\PrivateRoute.jsx", "JavaScript JSX", 0, 0, 13, 0, 0, 0, 1, 6, 20
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\components\common\Footer.jsx", "JavaScript JSX", 0, 0, 11, 0, 0, 0, 0, 3, 14
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\components\common\Sidebar.jsx", "JavaScript JSX", 0, 0, 224, 0, 0, 0, 1, 12, 237
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\components\common\TopHeader.jsx", "JavaScript JSX", 0, 0, 46, 0, 0, 0, 1, 5, 52
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\helpers\validator.helper.jsx", "JavaScript JSX", 0, 0, 5, 0, 0, 0, 0, 2, 7
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\hooks\auth.hook.jsx", "JavaScript JSX", 0, 0, 6, 0, 0, 0, 0, 3, 9
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\index.css", "CSS", 0, 0, 0, 0, 0, 12, 1, 4, 17
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\layouts\Wrapper.jsx", "JavaScript JSX", 0, 0, 28, 0, 0, 0, 0, 6, 34
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\layouts\auth.layout.jsx", "JavaScript JSX", 0, 0, 9, 0, 0, 0, 0, 3, 12
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\main.jsx", "JavaScript JSX", 0, 0, 11, 0, 0, 0, 0, 2, 13
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\404.jsx", "JavaScript JSX", 0, 0, 36, 0, 0, 0, 0, 6, 42
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\admin\adminperfil.jsx", "JavaScript JSX", 0, 0, 59, 0, 0, 0, 0, 6, 65
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\admin\dashboard.page.jsx", "JavaScript JSX", 0, 0, 282, 0, 0, 0, 4, 19, 305
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\admin\products.page.jsx", "JavaScript JSX", 0, 0, 25, 0, 0, 0, 0, 5, 30
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\admin\users.page.jsx", "JavaScript JSX", 0, 0, 25, 0, 0, 0, 0, 4, 29
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\auth\forgot-password.page.jsx", "JavaScript JSX", 0, 0, 67, 0, 0, 0, 0, 6, 73
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\auth\login.page.jsx", "JavaScript JSX", 0, 0, 137, 0, 0, 0, 0, 18, 155
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\auth\register.page.jsx", "JavaScript JSX", 0, 0, 241, 0, 0, 0, 0, 16, 257
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\auth\reset-password.page.jsx", "JavaScript JSX", 0, 0, 75, 0, 0, 0, 2, 7, 84
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\medico\CrearConsulta.jsx", "JavaScript JSX", 0, 0, 231, 0, 0, 0, 1, 7, 239
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\medico\HistorialMedico.jsx", "JavaScript JSX", 0, 0, 165, 0, 0, 0, 0, 9, 174
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\medico\MedicoPerfil.jsx", "JavaScript JSX", 0, 0, 213, 0, 0, 0, 0, 11, 224
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\medico\Medicos.jsx", "JavaScript JSX", 0, 0, 306, 0, 0, 0, 0, 16, 322
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\medico\MedicosCrud.jsx", "JavaScript JSX", 0, 0, 689, 0, 0, 0, 1, 29, 719
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\paciente\Pacientes.jsx", "JavaScript JSX", 0, 0, 316, 0, 0, 0, 1, 18, 335
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\paciente\PacientesCrud.jsx", "JavaScript JSX", 0, 0, 227, 0, 0, 0, 1, 10, 238
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\paciente\PerfilPaciente.jsx", "JavaScript JSX", 0, 0, 69, 0, 0, 0, 0, 6, 75
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\recepcionista\dashboard.page.jsx", "JavaScript JSX", 0, 0, 33, 0, 0, 0, 0, 6, 39
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\recepcionista\products.page.jsx", "JavaScript JSX", 0, 0, 29, 0, 0, 0, 0, 6, 35
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\recepcionista\users.page.jsx", "JavaScript JSX", 0, 0, 29, 0, 0, 0, 0, 6, 35
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\receta\receta.jsx", "JavaScript JSX", 0, 0, 96, 0, 0, 0, 8, 22, 126
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\reportes\ReporteConsultas.jsx", "JavaScript JSX", 0, 0, 361, 0, 0, 0, 0, 13, 374
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\reportes\ResumenReservas.jsx", "JavaScript JSX", 0, 0, 229, 0, 0, 0, 0, 15, 244
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\reserva\Reservas.jsx", "JavaScript JSX", 0, 0, 484, 0, 0, 0, 7, 24, 515
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\reserva\ReservasCrud.jsx", "JavaScript JSX", 0, 0, 342, 0, 0, 0, 0, 30, 372
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\store\about.page.jsx", "JavaScript JSX", 0, 0, 4, 0, 0, 0, 0, 2, 6
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\store\home.page.jsx", "JavaScript JSX", 0, 0, 48, 0, 0, 0, 0, 6, 54
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\pages\store\store.page.jsx", "JavaScript JSX", 0, 0, 12, 0, 0, 0, 0, 3, 15
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\providers\auth.provider.jsx", "JavaScript JSX", 0, 0, 36, 0, 0, 0, 0, 10, 46
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\src\services\axios.service.jsx", "JavaScript JSX", 0, 0, 5, 0, 0, 0, 0, 3, 8
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\tailwind.config.js", "JavaScript", 7, 0, 0, 0, 0, 0, 1, 1, 9
+"c:\Users\Jhanely\Desktop\FULL STACK\PROYE\frontend-main\frontend-main\vite.config.js", "JavaScript", 75, 0, 0, 0, 0, 0, 0, 2, 77
+"Total", "-", 1053, 9888, 5485, 13, 2, 12, 97, 506, 17056
