@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // URLs de los servidores usando variables de entorno de Vite
-let serverPrimary = `${import.meta.env.VITE_URL_DOCKER}:3004/api/historial`;
+let serverPrimary = `${import.meta.env.VITE_URL_DOCKER}:3000/api/historial`;
 let serverBackup = `${import.meta.env.VITE_URL_BACKUP}/api/historial`;
 let serverConsulta = `${import.meta.env.VITE_URL_BACKUP}/api/consulta`; // URL específica para crear consulta
 let currentServer = serverPrimary; // Servidor actual
@@ -10,13 +10,13 @@ let useBackupServer = false; // Bandera para usar el servidor de respaldo
 // Crear una instancia de Axios para el historial
 const api = axios.create({
   baseURL: serverPrimary,
-  timeout: 5000, // Timeout de las solicitudes a 5 segundos
+  
 });
 
 // Crear una instancia de Axios específica para crear consulta
 const apiConsulta = axios.create({
   baseURL: serverConsulta,
-  timeout: 5000, // Timeout de las solicitudes a 5 segundos
+  
 });
 
 // Función para verificar la disponibilidad del servidor, considerando el token

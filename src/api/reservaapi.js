@@ -193,3 +193,37 @@ export const obtenerMedicosdeEspecialidad = async (especialidadId) => {
     throw error; // Re-lanzar el error para manejo adicional si es necesario
   }
 };
+
+// Nueva API: Crear una consulta
+export const actualizarConsulta = async (idconsulta, consulta) => {
+  try {
+    // Realiza la solicitud PUT al endpoint de actualización de consulta
+    const respuesta = await api.put(`/consulta/${idconsulta}`, consulta);
+
+    // Muestra un mensaje de éxito si la consulta se actualiza correctamente
+    mostrarAlerta("success", "Consulta actualizada exitosamente");
+    return respuesta.data; // Devuelve la respuesta del servidor
+  } catch (error) {
+    // Manejo de errores y muestra de alerta en caso de fallo
+    mostrarAlerta(
+      "error",
+      error.response?.data?.message || "Error al actualizar la consulta"
+    );
+    throw error; // Re-lanzar el error para manejo adicional si es necesario
+  }
+};
+
+export const crearConsulta = async (consulta) => {
+  try {
+    // Realiza la solicitud POST al endpoint de crear consulta
+    const respuesta = await api.post("/consulta/create", consulta);
+    return respuesta.data; // Devuelve la respuesta del servidor
+  } catch (error) {
+    // Manejo de errores y muestra de alerta en caso de fallo
+    mostrarAlerta(
+      "error",
+      error.response?.data?.message || "Error al crear la consulta"
+    );
+    throw error; // Re-lanzar el error para manejo adicional si es necesario
+  }
+};

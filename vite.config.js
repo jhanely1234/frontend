@@ -72,5 +72,21 @@ export default defineConfig({
         ]
       }
     })
-  ]
+  ],
+  build: {
+    // Configuración para ignorar ciertos tipos de advertencias o errores
+    terserOptions: {
+      compress: {
+        drop_console: true, // Omitir logs de consola
+        drop_debugger: true // Omitir debuggers
+      }
+    },
+    // Para evitar que build se detenga ante advertencias
+    ignoreWarnings: [
+      {
+        // Ignorar advertencias específicas, si las conoces puedes filtrarlas aquí
+        message: /Circular dependency/i
+      }
+    ]
+  }
 });
