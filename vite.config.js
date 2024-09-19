@@ -74,6 +74,9 @@ export default defineConfig({
     })
   ],
   build: {
+    
+    sourcemap: false, // Desactiva los sourcemaps en producción
+    
     // Configuración para ignorar ciertos tipos de advertencias o errores
     terserOptions: {
       compress: {

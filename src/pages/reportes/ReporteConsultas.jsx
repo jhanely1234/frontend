@@ -5,8 +5,8 @@ import { PieChart, BarChart } from 'echarts/charts';
 import { CanvasRenderer } from 'echarts/renderers';
 import { FileBarChart, Users, UserCog, Calendar } from 'lucide-react';
 import { obtenerReporteConsultas, obtenerReporteReservas, obtenerReportePaciente, obtenerReporteDoctor } from "../../api/reportesApi";
-import { obtenerTodosPacientes } from "../../api/pacienteApi";
-import { obtenerTodosMedicos } from "../../api/medicoApi";
+import { obtenerTodosPacientes } from "../../api/pacienteapi";
+import { obtenerTodosMedicos } from "../../api/medicoapi";
 import Swal from 'sweetalert2';
 
 echarts.use([GridComponent, TooltipComponent, LegendComponent, PieChart, BarChart, CanvasRenderer]);
