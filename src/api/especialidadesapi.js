@@ -1,15 +1,13 @@
 import Swal from "sweetalert2"; // Importa SweetAlert
 import axios from "axios";
+import { toast } from "react-toastify"; // Importa Toastify para el error elegante
 
-// URLs de los servidores usando variables de entorno de Vite
-let serverPrimary = `${import.meta.env.VITE_URL_DOCKER}:3003/api/especialidad`;
-let serverBackup = `${import.meta.env.VITE_URL_BACKUP}/api/especialidad`;
-let currentServer = serverPrimary; // Servidor actual
-let useBackupServer = false; // Bandera para usar el servidor de respaldo
+// URL del servidor usando variable de entorno de Vite
+let serverPrimary = `${import.meta.env.VITE_URL_DOCKER}:3000/api/especialidad`;
 
 // Crear una instancia de Axios
 const api = axios.create({
-  baseURL: currentServer,
+  baseURL: serverPrimary,
   timeout: 5000 // Timeout de las solicitudes a 5 segundos
 });
 
@@ -33,86 +31,22 @@ const checkServerAvailability = async (url) => {
 const initializeServerConnection = async () => {
   const isPrimaryAvailable = await checkServerAvailability(serverPrimary);
   if (isPrimaryAvailable) {
-    console.log("Conectado al servidor principal:", serverPrimary);
-    currentServer = serverPrimary;
+    console.log("Conectado al servidor:", serverPrimary);
   } else {
-    console.warn(
-      "Servidor principal no disponible. Intentando con el servidor de respaldo..."
-    );
-    const isBackupAvailable = await checkServerAvailability(serverBackup);
-    if (isBackupAvailable) {
-      console.log(
-        "Conexión exitosa con el servidor de respaldo:",
-        serverBackup
-      );
-      api.defaults.baseURL = serverBackup;
-      currentServer = serverBackup;
-      useBackupServer = true;
-
-      await Swal.fire({
-        icon: "success",
-        title: "Conectado con Servidor de Respaldo",
-        text: "Ahora estás conectado con el servidor de respaldo.",
-        confirmButtonText: "Aceptar"
-      });
-    } else {
-      console.error("El servidor de respaldo tampoco está disponible");
-      await Swal.fire({
-        icon: "error",
-        title: "Error de Conexión",
-        text: "El servidor de respaldo tampoco está disponible. Por favor, intente de nuevo más tarde.",
-        confirmButtonText: "Aceptar"
-      });
-    }
+    console.error("El microservicio de especialidades no está disponible.");
+    toast.error("El microservicio de especialidades no está disponible.", {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true
+    });
   }
 };
 
 // Inicializar la conexión al cargar el módulo
 initializeServerConnection();
-
-// Configura un intervalo para verificar periódicamente la disponibilidad de los servidores
-const checkServerInterval = setInterval(async () => {
-  const isPrimaryAvailable = await checkServerAvailability(serverPrimary);
-  if (isPrimaryAvailable && useBackupServer) {
-    console.log("El servidor principal está disponible nuevamente");
-    api.defaults.baseURL = serverPrimary;
-    currentServer = serverPrimary;
-    useBackupServer = false;
-
-    await Swal.fire({
-      icon: "success",
-      title: "Conectado con el Servidor Principal",
-      text: "El servidor principal está disponible nuevamente. Ahora estás conectado con el servidor principal.",
-      confirmButtonText: "Aceptar"
-    });
-  } else if (!isPrimaryAvailable && !useBackupServer) {
-    console.warn(
-      "Servidor principal no disponible. Intentando con el servidor de respaldo..."
-    );
-    const isBackupAvailable = await checkServerAvailability(serverBackup);
-    if (isBackupAvailable) {
-      console.log("Conexión exitosa con el servidor de respaldo");
-      api.defaults.baseURL = serverBackup;
-      currentServer = serverBackup;
-      useBackupServer = true;
-
-      await Swal.fire({
-        icon: "success",
-        title: "Conectado con Servidor de Respaldo",
-        text: "Ahora estás conectado con el servidor de respaldo.",
-        confirmButtonText: "Aceptar"
-      });
-    } else {
-      console.error("El servidor de respaldo tampoco está disponible");
-      await Swal.fire({
-        icon: "error",
-        title: "Error de Conexión",
-        text: "El servidor de respaldo tampoco está disponible. Por favor, intente de nuevo más tarde.",
-        confirmButtonText: "Aceptar"
-      });
-    }
-  }
-}, 5000); // Verifica cada 5 segundos
 
 // Interceptor para añadir el token a cada solicitud
 api.interceptors.request.use(
@@ -121,7 +55,7 @@ api.interceptors.request.use(
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
-    config.baseURL = currentServer;
+    config.baseURL = serverPrimary;
     return config;
   },
   (error) => {

@@ -89,11 +89,6 @@ const mostrarAlerta = (tipo, mensaje) => {
   });
 };
 
-export const obtenerDisponibilidadMedico = async (medicoId) => {
-  const response = await fetch(`/api/medicos/${medicoId}/disponibilidad`);
-  const data = await response.json();
-  return data; // Devuel  ve un array de fechas disponibles
-};
 
 export const obtenerTodasReservas = async () => {
   try {
@@ -164,21 +159,37 @@ export const eliminarReserva = async (id) => {
   }
 };
 
-export const reservarDiaLibre = async (medicoId, especialidadId) => {
+// Nueva API: Obtener disponibilidad de un médico en función de su especialidad
+export const obtenerCalendario = async (medicoId, especialidadId) => {
   try {
-    const respuesta = await api.post("/dialibre", {
-      medicoId,
-      especialidadId
-    });
+    const respuesta = await api.get(
+      `/medico/calendario/${medicoId}/${especialidadId}`
+    );
     return respuesta.data;
   } catch (error) {
-    MySwal.fire({
-      icon: "error",
-      title: "Error",
-      text: error.response?.data?.message || "Error al reservar el día libre"
-    });
+    mostrarAlerta(
+      "error",
+      error.response?.data?.message ||
+        "Error al obtener la disponibilidad del médico"
+    );
     throw error;
   }
 };
+// Nueva API: Obtener disponibilidad de un médico en función de su especialidad
+export const obtenerMedicosdeEspecialidad = async (especialidadId) => {
+  try {
+    // Realiza una solicitud GET al endpoint para obtener la disponibilidad del médico según la especialidad
+    const respuesta = await api.get(`/medico/especialidad/${especialidadId}`);
 
-export default api;
+    // Retorna la data de la respuesta
+    return respuesta.data;
+  } catch (error) {
+    // Muestra una alerta en caso de error
+    mostrarAlerta(
+      "error",
+      error.response?.data?.message ||
+        "Error al obtener los medicos de la especialidad"
+    );
+    throw error; // Re-lanzar el error para manejo adicional si es necesario
+  }
+};

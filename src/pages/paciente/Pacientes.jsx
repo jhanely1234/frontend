@@ -1,71 +1,80 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, Edit, Trash2, BookOpen, Search, User, CreditCard, Calendar, Phone, Users, Plus, X, Filter, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
-import { Dialog } from "@headlessui/react";
-import { obtenerTodosPacientes, obtenerPacientePorId, eliminarPaciente } from "../../api/pacienteapi";
-import useAuth from "../../hooks/auth.hook";
+'use client'
+
+import React, { useEffect, useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { Eye, Edit, Trash2, BookOpen, Search, User, CreditCard, Calendar, Phone, Users, Plus, X, Filter, ChevronDown, ChevronUp, RefreshCw } from "lucide-react"
+import { obtenerTodosPacientes, obtenerPacientePorId, eliminarPaciente } from "../../api/pacienteapi"
+import useAuth from "../../hooks/auth.hook"
 
 export default function Pacientes() {
-  const [pacientes, setPacientes] = useState([]);
-  const [viewProfile, setViewProfile] = useState(false);
-  const [selectedPaciente, setSelectedPaciente] = useState(null);
+  const [pacientes, setPacientes] = useState([])
+  const [viewProfile, setViewProfile] = useState(false)
+  const [selectedPaciente, setSelectedPaciente] = useState(null)
   const [filters, setFilters] = useState({
     name: "",
     ci: "",
     sexo: "",
     minEdad: "",
     maxEdad: ""
-  });
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
-  const { auth: { roles } } = useAuth();
+  })
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const navigate = useNavigate()
+  const { auth: { roles } } = useAuth()
 
   useEffect(() => {
     const fetchPacientes = async () => {
       try {
-        const data = await obtenerTodosPacientes();
-        setPacientes(data);
+        const data = await obtenerTodosPacientes()
+        setPacientes(data)
       } catch (error) {
-        console.error("Error fetching pacientes:", error);
+        console.error("Error fetching pacientes:", error)
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
-    fetchPacientes();
-  }, []);
+    }
+    fetchPacientes()
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const handleViewProfile = async (id) => {
     try {
-      const paciente = await obtenerPacientePorId(id);
-      setSelectedPaciente(paciente);
-      setViewProfile(true);
+      const paciente = await obtenerPacientePorId(id)
+      setSelectedPaciente(paciente)
+      setViewProfile(true)
     } catch (error) {
-      console.error("Error fetching paciente:", error);
+      console.error("Error fetching paciente:", error)
     }
-  };
+  }
 
   const handleEditProfile = (id) => {
-    navigate(`/paciente/editar/${id}`);
-  };
+    navigate(`/paciente/editar/${id}`)
+  }
 
   const handleDeletePaciente = async (id) => {
     try {
-      await eliminarPaciente(id);
-      setPacientes(pacientes.filter((paciente) => paciente._id !== id));
+      await eliminarPaciente(id)
+      setPacientes(pacientes.filter((paciente) => paciente._id !== id))
     } catch (error) {
-      console.error("Error deleting paciente:", error);
+      console.error("Error deleting paciente:", error)
     }
-  };
+  }
 
   const handleViewHistorial = (pacienteId) => {
-    navigate(`/paciente/historial/${pacienteId}`);
-  };
+    navigate(`/paciente/historial/${pacienteId}`)
+  }
 
   const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setFilters((prev) => ({ ...prev, [name]: value }))
+  }
 
   const clearFilters = () => {
     setFilters({
@@ -74,28 +83,28 @@ export default function Pacientes() {
       sexo: "",
       minEdad: "",
       maxEdad: ""
-    });
-  };
+    })
+  }
 
-  const canAddPatient = roles.some((role) => ["admin", "recepcionista"].includes(role.name));
-  const canEditPatient = roles.some((role) => ["admin", "recepcionista"].includes(role.name));
+  const canAddPatient = roles.some((role) => ["admin", "recepcionista"].includes(role.name))
+  const canEditPatient = roles.some((role) => ["admin", "recepcionista"].includes(role.name))
 
   const filteredPacientes = pacientes.filter((paciente) => {
     return (
       (filters.name === "" || `${paciente.name} ${paciente.lastname}`.toLowerCase().includes(filters.name.toLowerCase())) &&
       (filters.ci === "" || (paciente.ci && paciente.ci.toString().includes(filters.ci))) &&
-      (filters.sexo === "" || paciente.sexo.toLowerCase() === filters.sexo.toLowerCase()) &&
+      (filters.sexo === "" || paciente.genero.toLowerCase() === filters.sexo.toLowerCase()) &&
       (filters.minEdad === "" || paciente.edad >= parseInt(filters.minEdad)) &&
       (filters.maxEdad === "" || paciente.edad <= parseInt(filters.maxEdad))
-    );
-  });
+    )
+  })
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
       </div>
-    );
+    )
   }
 
   return (
@@ -181,155 +190,178 @@ export default function Pacientes() {
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full bg-white shadow-md rounded-lg">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CI</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edad</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sexo</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredPacientes.map((paciente) => (
-              <tr key={paciente._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{paciente.name} {paciente.lastname}</div>
+      {!isMobile ? (
+        <div className="overflow-x-auto">
+          <table className="w-full bg-white shadow-md rounded-lg">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CI</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edad</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sexo</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredPacientes.map((paciente) => (
+                <tr key={paciente._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{paciente.name} {paciente.lastname}</div>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{paciente.email}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{paciente.ci}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{paciente.edad}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{paciente.telefono}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{paciente.sexo}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button onClick={() => handleViewProfile(paciente._id)} className="text-blue-600 hover:text-blue-900 mr-2">
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{paciente.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{paciente.ci}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{paciente.edad}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{paciente.telefono}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{paciente.genero}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onClick={() => handleViewProfile(paciente._id)} className="text-blue-600 hover:text-blue-900 mr-2">
+                      <Eye size={20} />
+                    </button>
+                    {canEditPatient && (
+                      <button onClick={() => handleEditProfile(paciente._id)} className="text-green-600 hover:text-green-900 mr-2">
+                        <Edit size={20} />
+                      </button>
+                    )}
+                    {canAddPatient && (
+                      <button onClick={() => handleDeletePaciente(paciente._id)} className="text-red-600 hover:text-red-900 mr-2">
+                        <Trash2 size={20} />
+                      </button>
+                    )}
+                    <button onClick={() => handleViewHistorial(paciente._id)} className="text-purple-600 hover:text-purple-900">
+                      <BookOpen size={20} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {filteredPacientes.map((paciente) => (
+            <div key={paciente._id} className="bg-white shadow-md rounded-lg p-4">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="text-lg font-semibold">{paciente.name} {paciente.lastname}</h3>
+                  <p className="text-sm text-gray-600">{paciente.email}</p>
+                </div>
+                <div className="flex space-x-2">
+                  <button onClick={() => handleViewProfile(paciente._id)} className="text-blue-600">
                     <Eye size={20} />
                   </button>
                   {canEditPatient && (
-                    <button onClick={() => handleEditProfile(paciente._id)} className="text-green-600 hover:text-green-900 mr-2">
+                    <button onClick={() => handleEditProfile(paciente._id)} className="text-green-600">
                       <Edit size={20} />
                     </button>
                   )}
                   {canAddPatient && (
-                    <button onClick={() => handleDeletePaciente(paciente._id)} className="text-red-600 hover:text-red-900 mr-2">
+                    <button onClick={() => handleDeletePaciente(paciente._id)} className="text-red-600">
                       <Trash2 size={20} />
                     </button>
                   )}
-                  <button onClick={() => handleViewHistorial(paciente._id)} className="text-purple-600 hover:text-purple-900">
+                  <button onClick={() => handleViewHistorial(paciente._id)} className="text-purple-600">
                     <BookOpen size={20} />
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile view */}
-      <div className="md:hidden">
-        {filteredPacientes.map((paciente) => (
-          <div key={paciente._id} className="bg-white shadow-md rounded-lg p-4 mb-4">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h3 className="text-lg font-semibold">{paciente.name} {paciente.lastname}</h3>
-                <p className="text-sm text-gray-600">{paciente.email}</p>
-              </div>
-              <div className="flex space-x-2">
-                <button onClick={() => handleViewProfile(paciente._id)} className="text-blue-600">
-                  <Eye size={20} />
-                </button>
-                {canEditPatient && (
-                  <button onClick={() => handleEditProfile(paciente._id)} className="text-green-600">
-                    <Edit size={20} />
-                  </button>
-                )}
-                {canAddPatient && (
-                  <button onClick={() => handleDeletePaciente(paciente._id)} className="text-red-600">
-                    <Trash2 size={20} />
-                  </button>
-                )}
-                <button onClick={() => handleViewHistorial(paciente._id)} className="text-purple-600">
-                  <BookOpen size={20} />
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><span className="font-semibold">CI:</span> {paciente.ci}</div>
-              <div><span className="font-semibold">Edad:</span> {paciente.edad}</div>
-              <div><span className="font-semibold">Teléfono:</span> {paciente.telefono}</div>
-              <div><span className="font-semibold">Sexo:</span> {paciente.sexo}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <Dialog open={viewProfile} onClose={() => setViewProfile(false)} className="fixed inset-0 z-10 overflow-y-auto">
-        <div className="flex items-center justify-center min-h-screen">
-          <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
-          <div className="relative bg-white rounded-lg max-w-md w-full mx-auto p-6">
-            <Dialog.Title className="text-xl font-semibold mb-4">Perfil del Paciente</Dialog.Title>
-            {selectedPaciente && (
-              <div className="space-y-4">
-                <div className="flex items-center space-x-4 mb-4">
-                  <User className="text-blue-600" size={48} />
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">{selectedPaciente.name} {selectedPaciente.lastname}</h3>
-                    <p className="text-gray-600">{selectedPaciente.email}</p>
-                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center">
-                    <Phone className="text-gray-400 mr-2" size={20} />
-                    <span>{selectedPaciente.telefono}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Users className="text-gray-400 mr-2" size={20} />
-                    <span>{selectedPaciente.sexo}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Calendar className="text-gray-400 mr-2" size={20} />
-                    <span>{selectedPaciente.fechaNacimiento.split("T")[0]}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CreditCard className="text-gray-400 mr-2" size={20} />
-                    <span>{selectedPaciente.ci}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="font-semibold">CI:</span> {paciente.ci}</div>
+                <div><span className="font-semibold">Edad:</span> {paciente.edad}</div>
+                <div><span className="font-semibold">Teléfono:</span> {paciente.telefono}</div>
+                <div><span className="font-semibold">Sexo:</span> {paciente.sexo}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {viewProfile && (
+        <div className="fixed inset-0 z-10 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                      Perfil del Paciente
+                    </h3>
+                    <div className="mt-2">
+                      {selectedPaciente && (
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-4 mb-4">
+                            <User className="text-blue-600" size={48} />
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-800">{selectedPaciente.name} {selectedPaciente.lastname}</h3>
+                              <p className="text-gray-600">{selectedPaciente.email}</p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="flex items-center">
+                              <Phone className="text-gray-400 mr-2" size={20} />
+                              <span>{selectedPaciente.telefono}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Users className="text-gray-400 mr-2" size={20} />
+                              <span>{selectedPaciente.sexo}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Calendar className="text-gray-400 mr-2" size={20} />
+                              <span>{new Date(selectedPaciente.fechaNacimiento).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <CreditCard className="text-gray-400 mr-2" size={20} />
+                              <span>{selectedPaciente.ci}</span>
+                            </div>
+                          </div>
+                          {selectedPaciente.telefono_tutor && (
+                            <div className="flex items-center mt-2">
+                              <Phone className="text-gray-400 mr-2" size={20} />
+                              <span>Teléfono del tutor: {selectedPaciente.telefono_tutor}</span>
+                            </div>
+                          )}
+                          {selectedPaciente.nombre_tutor && (
+                            <div className="flex items-center mt-2">
+                              <User className="text-gray-400 mr-2" size={20} />
+                              <span>Nombre del tutor: {selectedPaciente.nombre_tutor}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            )}
-            <button
-              onClick={() => setViewProfile(false)}
-              className="mt-6 w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300"
-            >
-              Cerrar
-            </button>
-            <button
-              onClick={() => setViewProfile(false)}
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-            >
-              <X size={24} />
-            </button>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setViewProfile(false)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </Dialog>
+      )}
     </div>
-  );
+  )
 }

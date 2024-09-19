@@ -13,7 +13,7 @@ const PacientesCrud = () => {
     email: "",
     password: "",
     ci: "",
-    sexo: "",
+    genero: "",
     fechaNacimiento: "",
     telefono: "",
     telefono_tutor: "",
@@ -155,10 +155,10 @@ const PacientesCrud = () => {
           />
         </label>
         <label className="block">
-          Sexo:
+          Genero:
           <select
-            name="sexo"
-            value={paciente.sexo}
+            name="genero"
+            value={paciente.genero}
             onChange={handleChange}
             className="mt-1 block w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
             required

@@ -5,7 +5,7 @@ import {
   obtenerMedicoPorId,
   eliminarMedico
 } from "../../api/medicoapi";
-import { FiEye, FiTrash, FiFilter, FiX } from "react-icons/fi";
+import { FiEye, FiTrash, FiFilter, FiX, FiCalendar, FiClock } from "react-icons/fi";
 import { BsPencil } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/auth.hook";
@@ -18,7 +18,7 @@ export default function Component() {
   const [selectedMedico, setSelectedMedico] = useState(null);
   const [searchName, setSearchName] = useState('');
   const [searchEspecialidad, setSearchEspecialidad] = useState('');
-  const [searchSexo, setSearchSexo] = useState('');
+  const [searchGenero, setSearchGenero] = useState('');
   const [minEdad, setMinEdad] = useState('');
   const [maxEdad, setMaxEdad] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -32,7 +32,7 @@ export default function Component() {
     const fetchMedicos = async () => {
       try {
         const data = await obtenerTodosMedicos();
-        setMedicos(data);
+        setMedicos(data.medicos);
       } catch (error) {
         console.error("Error fetching medicos:", error);
       }
@@ -42,8 +42,8 @@ export default function Component() {
 
   const handleViewProfile = async (id) => {
     try {
-      const medico = await obtenerMedicoPorId(id);
-      setSelectedMedico(medico);
+      const response = await obtenerMedicoPorId(id);
+      setSelectedMedico(response.medico);
       setViewProfile(true);
     } catch (error) {
       console.error("Error fetching medico:", error);
@@ -66,7 +66,7 @@ export default function Component() {
   const resetFilters = () => {
     setSearchName('');
     setSearchEspecialidad('');
-    setSearchSexo('');
+    setSearchGenero('');
     setMinEdad('');
     setMaxEdad('');
   };
@@ -84,8 +84,8 @@ export default function Component() {
   const filteredMedicos = medicos.filter((medico) => {
     return (
       (searchName === '' || `${medico.name} ${medico.lastname}`.toLowerCase().includes(searchName.toLowerCase())) &&
-      (searchEspecialidad === '' || medico.especialidades.some(especialidad => especialidad.name.toLowerCase().includes(searchEspecialidad.toLowerCase()))) &&
-      (searchSexo === '' || medico.sexo.toLowerCase() === searchSexo.toLowerCase()) &&
+      (searchEspecialidad === '' || medico.especialidades.some(especialidad => especialidad.toLowerCase().includes(searchEspecialidad.toLowerCase()))) &&
+      (searchGenero === '' || medico.genero.toLowerCase() === searchGenero.toLowerCase()) &&
       (minEdad === '' || medico.edad >= parseInt(minEdad)) &&
       (maxEdad === '' || medico.edad <= parseInt(maxEdad))
     );
@@ -142,11 +142,11 @@ export default function Component() {
                 className="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <select
-                value={searchSexo}
-                onChange={(e) => setSearchSexo(e.target.value)}
+                value={searchGenero}
+                onChange={(e) => setSearchGenero(e.target.value)}
                 className="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Todos los sexos</option>
+                <option value="">Todos los géneros</option>
                 <option value="Masculino">Masculino</option>
                 <option value="Femenino">Femenino</option>
               </select>
@@ -180,7 +180,7 @@ export default function Component() {
                   />
                   <div>
                     <h2 className="text-xl font-semibold text-gray-800">{medico.name} {medico.lastname}</h2>
-                    <p className="text-sm text-gray-600">{medico.especialidades.map((e) => e.name).join(", ")}</p>
+                    <p className="text-sm text-gray-600">{medico.especialidades.join(", ")}</p>
                   </div>
                 </div>
                 <div className="mb-4">
@@ -259,7 +259,10 @@ export default function Component() {
                       <span className="font-medium">Teléfono:</span> {selectedMedico.telefono}
                     </p>
                     <p className="text-gray-700">
-                      <span className="font-medium">Sexo:</span> {selectedMedico.sexo}
+                      <span className="font-medium">CI:</span> {selectedMedico.ci}
+                    </p>
+                    <p className="text-gray-700">
+                      <span className="font-medium">Género:</span> {selectedMedico.genero}
                     </p>
                     <p className="text-gray-700">
                       <span className="font-medium">Fecha de Nacimiento:</span> {new Date(selectedMedico.fechaNacimiento).toLocaleDateString()}
@@ -275,24 +278,28 @@ export default function Component() {
                 <div className="flex flex-wrap gap-2 mb-6">
                   {selectedMedico.especialidades.map((especialidad, index) => (
                     <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                      {especialidad.name}
+                      {especialidad}
                     </span>
                   ))}
                 </div>
               </div>
               <div className="mt-6">
                 <h3 className="text-2xl font-semibold text-gray-800 mb-4">Disponibilidad</h3>
-                <div className="space-y-4">
-                  {selectedMedico.disponibilidadPorEspecialidad.map((dispEsp, index) => (
-                    <div key={index} className="border-t pt-4">
-                      <h4 className="font-semibold text-gray-700 mb-2">{dispEsp.especialidad}</h4>
-                      <ul className="list-disc list-inside pl-4 space-y-1">
-                        {dispEsp.disponibilidades.map((disp, idx) => (
-                          <li key={idx} className="text-gray-600">
-                            {disp.dia}: {disp.inicio} - {disp.fin} ({disp.turno})
-                          </li>
-                        ))}
-                      </ul>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {selectedMedico.disponibilidades.map((disp, index) => (
+                    <div key={index} className="bg-gray-50 p-4 rounded-lg shadow">
+                      <h4 className="font-semibold text-gray-700 mb-2">{disp.dia}</h4>
+                      <p className="text-gray-600 flex items-center">
+                        <FiClock className="mr-2" />
+                        {disp.inicio} - {disp.fin}
+                      </p>
+                      <p className="text-gray-600 flex items-center">
+                        <FiCalendar className="mr-2" />
+                        Turno: {disp.turno}
+                      </p>
+                      <p className="text-gray-600 mt-2">
+                        <span className="font-medium">Especialidad:</span> {disp.especialidad}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -313,7 +320,7 @@ export default function Component() {
           background: #888;
           border-radius: 4px;
         }
-        .custom-scrollbar: ::-webkit-scrollbar-thumb:hover {
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #555;
         }
       `}</style>

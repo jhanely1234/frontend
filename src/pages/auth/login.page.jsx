@@ -56,7 +56,7 @@ const LoginPage = () => {
       });
 
       if (
-        data.response === "success" &&
+        data.status === "success" &&
         data.message === "Código de verificación enviado al correo electrónico"
       ) {
         setIsCodeSent(true);
@@ -83,12 +83,13 @@ const LoginPage = () => {
     }
 
     try {
+      console.log(email, verificationCode);
       const { data } = await axiosClient.post("/auth/verify-code", {
         email,
         code: verificationCode
       });
 
-      if (data.response === "success") {
+      if (data.status === "success") {
         localStorage.setItem("token", data.user.access_token);
         setAuth(data.user);
 

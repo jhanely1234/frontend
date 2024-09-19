@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
@@ -67,7 +69,7 @@ export default function Component() {
     defaultValues: {
       especialidades: [],
       disponibilidad: [],
-      turnoMedicoGeneral: ""
+      turno: ""
     }
   });
   const [especialidades, setEspecialidades] = useState([]);
@@ -79,7 +81,7 @@ export default function Component() {
   const { id } = useParams();
 
   const watchEspecialidades = watch("especialidades");
-  const watchTurnoMedicoGeneral = watch("turnoMedicoGeneral");
+  const watchTurno = watch("turno");
 
   useEffect(() => {
     fetchEspecialidades();
@@ -92,13 +94,17 @@ export default function Component() {
   const fetchEspecialidades = async () => {
     try {
       setIsLoading(true);
-      const data = await obtenerTodasEspecialidades();
-      setEspecialidades(
-        data.map((especialidad) => ({
-          value: especialidad._id,
-          label: especialidad.name
-        }))
-      );
+      const response = await obtenerTodasEspecialidades();
+      if (response.status === "success" && Array.isArray(response.especialidades)) {
+        setEspecialidades(
+          response.especialidades.map((especialidad) => ({
+            value: especialidad._id,
+            label: especialidad.name
+          }))
+        );
+      } else {
+        throw new Error("Formato de respuesta inesperado");
+      }
     } catch (error) {
       console.error("Error fetching especialidades:", error);
       Swal.fire("Error", "No se pudieron cargar las especialidades", "error");
@@ -119,12 +125,8 @@ export default function Component() {
             key,
             data[key].map((esp) => ({ value: esp._id, label: esp.name }))
           );
-          const isMedicoGeneral = data[key].some(
-            (esp) => esp.name.toLowerCase() === "medicina general"
-          );
-          if (isMedicoGeneral) {
-            setValue("turnoMedicoGeneral", data.turno);
-          }
+        } else if (key === "turno") {
+          setValue("turno", data[key]);
         } else {
           setValue(key, data[key]);
         }
@@ -155,34 +157,32 @@ export default function Component() {
       );
 
       if (isMedicoGeneral) {
-        medicoData.turno = data.turnoMedicoGeneral;
-
-        if (data.turnoMedicoGeneral !== "ambos") {
+        medicoData.turno = data.turno;
+        if (data.turno === "ambos") {
+          if (data.especialidades.length > 1) {
+            Swal.fire("Error", "No se pueden seleccionar otras especialidades cuando Medicina General tiene turno 'ambos'", "error");
+            setIsLoading(false);
+            return;
+          }
+          delete medicoData.disponibilidad;
+        } else {
           const otrasEspecialidades = data.especialidades.filter(
             (esp) => esp.label.toLowerCase() !== "medicina general"
           );
-
           if (otrasEspecialidades.length > 0) {
-            const horarioDisponible =
-              data.turnoMedicoGeneral === "mañana"
-                ? horariosTarde
-                : horariosManana;
+            const horariosPermitidos = data.turno === "mañana" ? horariosTarde : horariosManana;
             medicoData.disponibilidad = data.disponibilidad
-              .filter((d) =>
-                otrasEspecialidades.some((esp) => esp.value === d.especialidad)
-              )
-              .filter((d) =>
-                horarioDisponible.some((h) => h.value === d.inicio)
-              )
+              .filter((d) => otrasEspecialidades.some((esp) => esp.value === d.especialidad))
+              .filter((d) => horariosPermitidos.some((h) => h.value === d.inicio))
               .map(({ dia, inicio, fin, especialidad }) => ({
                 dia,
                 inicio,
                 fin,
                 especialidad
               }));
+          } else {
+            delete medicoData.disponibilidad;
           }
-        } else {
-          delete medicoData.disponibilidad;
         }
       } else {
         delete medicoData.turno;
@@ -196,9 +196,6 @@ export default function Component() {
         );
       }
 
-      // Remove fields that shouldn't be sent to the backend
-      delete medicoData.turnoMedicoGeneral;
-
       if (isEditing) {
         await actualizarMedico(id, medicoData);
       } else {
@@ -207,6 +204,7 @@ export default function Component() {
       navigate("/medico");
     } catch (error) {
       console.error("Error saving medico:", error);
+      Swal.fire("Error", "No se pudo guardar la información del médico", "error");
     } finally {
       setIsLoading(false);
     }
@@ -241,26 +239,20 @@ export default function Component() {
     }
   };
 
+  const isMedicoGeneral = watchEspecialidades.some(
+    (esp) => esp.label.toLowerCase() === "medicina general"
+  );
+
+  const showDisponibilidad = isMedicoGeneral
+    ? watchTurno !== "ambos"
+    : watchEspecialidades.length > 0;
+
   const getHorariosDisponibles = () => {
-    const isMedicoGeneral = watchEspecialidades.some(
-      (esp) => esp.label.toLowerCase() === "medicina general"
-    );
     if (isMedicoGeneral) {
-      return watchTurnoMedicoGeneral === "mañana"
-        ? horariosTarde
-        : horariosManana;
+      return watchTurno === "mañana" ? horariosTarde : horariosManana;
     }
     return [...horariosManana, ...horariosTarde];
   };
-
-  const showDisponibilidad =
-    watchEspecialidades.some(
-      (esp) => esp.label.toLowerCase() !== "medicina general"
-    ) &&
-    (watchTurnoMedicoGeneral !== "ambos" ||
-      !watchEspecialidades.some(
-        (esp) => esp.label.toLowerCase() === "medicina general"
-      ));
 
   if (isLoading) {
     return (
@@ -377,20 +369,20 @@ export default function Component() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               <FiUsers className="inline-block mr-2" />
-              Sexo:
+              Género:
             </label>
             <select
-              {...register("sexo", { required: "El sexo es requerido" })}
+              {...register("genero", { required: "El género es requerido" })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
             >
               <option value="" disabled>
-                Seleccione el sexo
+                Seleccione el género
               </option>
               <option value="Masculino">Masculino</option>
               <option value="Femenino">Femenino</option>
             </select>
-            {errors.sexo && (
-              <p className="text-red-500 text-xs mt-1">{errors.sexo.message}</p>
+            {errors.genero && (
+              <p className="text-red-500 text-xs mt-1">{errors.genero.message}</p>
             )}
           </div>
           <div>
@@ -463,7 +455,14 @@ export default function Component() {
               name="especialidades"
               control={control}
               rules={{
-                required: "Debe seleccionar al menos una especialidad"
+                required: "Debe seleccionar al menos una especialidad",
+                validate: (value) => {
+                  const isMedicoGeneral = value.some(esp => esp.label.toLowerCase() === "medicina general");
+                  if (isMedicoGeneral && watchTurno === "ambos" && value.length > 1) {
+                    return "No se pueden seleccionar otras especialidades cuando Medicina General tiene turno 'ambos'";
+                  }
+                  return true;
+                }
               }}
               render={({ field }) => (
                 <Select
@@ -509,15 +508,13 @@ export default function Component() {
           )}
         </div>
 
-        {watchEspecialidades.some(
-          (esp) => esp.label.toLowerCase() === "medicina general"
-        ) && (
+        {isMedicoGeneral && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Turno para Medicina General:
             </label>
             <select
-              {...register("turnoMedicoGeneral", {
+              {...register("turno", {
                 required: "Debe seleccionar un turno para Medicina General"
               })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
@@ -529,9 +526,9 @@ export default function Component() {
                 </option>
               ))}
             </select>
-            {errors.turnoMedicoGeneral && (
+            {errors.turno && (
               <p className="text-red-500 text-xs mt-1">
-                {errors.turnoMedicoGeneral.message}
+                {errors.turno.message}
               </p>
             )}
           </div>
@@ -547,9 +544,17 @@ export default function Component() {
               control={control}
               defaultValue={[]}
               rules={{
-                validate: (value) =>
-                  value.length > 0 ||
-                  "Debe agregar al menos una disponibilidad para especialidades que no sean Medicina General"
+                validate: (value) => {
+                  if (isMedicoGeneral && watchTurno !== "ambos") {
+                    const otrasEspecialidades = watchEspecialidades.filter(
+                      (esp) => esp.label.toLowerCase() !== "medicina general"
+                    );
+                    return otrasEspecialidades.length === 0 || value.length > 0 || 
+                      "Debe agregar al menos una disponibilidad para las especialidades adicionales";
+                  }
+                  return watchEspecialidades.length === 0 || value.length > 0 || 
+                    "Debe agregar al menos una disponibilidad";
+                }
               }}
               render={({ field }) => (
                 <>
