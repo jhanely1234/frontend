@@ -182,6 +182,7 @@ export const obtenerMedicosdeEspecialidad = async (especialidadId) => {
     const respuesta = await api.get(`/medico/especialidad/${especialidadId}`);
 
     // Retorna la data de la respuesta
+    console.log(respuesta.data);
     return respuesta.data;
   } catch (error) {
     // Muestra una alerta en caso de error
@@ -227,3 +228,25 @@ export const crearConsulta = async (consulta) => {
     throw error; // Re-lanzar el error para manejo adicional si es necesario
   }
 };
+// Nueva API: Confirmar la reserva del médico
+export const confirmarReservaMedico = async (reservaId, estadoConfirmacionMedico) => {
+  try {
+    console.log(estadoConfirmacionMedico);
+    // Realiza la solicitud PUT al endpoint de confirmación de reserva
+    const respuesta = await api.put(`/${reservaId}/confirmacion`, {
+      estadoConfirmacionMedico
+    });
+
+    // Muestra un mensaje de éxito si la confirmación se actualiza correctamente
+    mostrarAlerta("success", "Reserva confirmada exitosamente");
+    return respuesta.data; // Devuelve la respuesta del servidor
+  } catch (error) {
+    // Manejo de errores y muestra de alerta en caso de fallo
+    mostrarAlerta(
+      "error",
+      error.response?.data?.message || "Error al confirmar la reserva"
+    );
+    throw error; // Re-lanzar el error para manejo adicional si es necesario
+  }
+};
+

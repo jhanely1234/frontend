@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
@@ -10,7 +10,7 @@ import { format, subYears } from "date-fns";
 import {
   crearMedico,
   actualizarMedico,
-  obtenerMedicoPorId
+  obtenerMedicoPorId2
 } from "../../api/medicoapi";
 import {
   obtenerTodasEspecialidades,
@@ -57,7 +57,7 @@ const horariosTarde = [
   { value: "17:00", label: "05:00 PM" }
 ];
 
-export default function Component() {
+export default function DoctorForm() {
   const {
     register,
     control,
@@ -116,21 +116,40 @@ export default function Component() {
   const fetchMedico = async (medicoId) => {
     try {
       setIsLoading(true);
-      const data = await obtenerMedicoPorId(medicoId);
-      Object.keys(data).forEach((key) => {
-        if (key === "fechaNacimiento") {
-          setValue(key, new Date(data[key]));
-        } else if (key === "especialidades") {
-          setValue(
-            key,
-            data[key].map((esp) => ({ value: esp._id, label: esp.name }))
-          );
-        } else if (key === "turno") {
-          setValue("turno", data[key]);
-        } else {
-          setValue(key, data[key]);
-        }
-      });
+      const data = await obtenerMedicoPorId2(medicoId);
+      console.log("Data:", data);
+      if (data.response === "success" && data.medico) {
+        const medico = data.medico;
+        Object.keys(medico).forEach((key) => {
+          if (key === "fechaNacimiento") {
+            setValue(key, new Date(medico[key]));
+          } else if (key === "especialidades") {
+            const especialidadesFormateadas = medico[key].map(esp => ({
+              value: esp.especialidad._id,
+              label: esp.especialidad.name
+            }));
+            setValue("especialidades", especialidadesFormateadas);
+            
+            // Configurar turno y disponibilidades
+            const medicoGeneral = medico[key].find(esp => esp.especialidad.name.toLowerCase() === "medicina general");
+            if (medicoGeneral) {
+              setValue("turno", medicoGeneral.turno);
+            }
+            
+            const disponibilidades = medico[key].flatMap(esp => 
+              esp.disponibilidades ? esp.disponibilidades.map(d => ({
+                ...d,
+                especialidad: esp.especialidad._id
+              })) : []
+            );
+            setValue("disponibilidad", disponibilidades);
+          } else {
+            setValue(key, medico[key]);
+          }
+        });
+      } else {
+        throw new Error("Formato de respuesta inesperado");
+      }
     } catch (error) {
       console.error("Error fetching medico:", error);
       Swal.fire(
@@ -197,9 +216,12 @@ export default function Component() {
       }
 
       if (isEditing) {
+        console.log("medicoData:", medicoData);
         await actualizarMedico(id, medicoData);
+        Swal.fire("Éxito", "Médico actualizado correctamente", "success");
       } else {
         await crearMedico(medicoData);
+        Swal.fire("Éxito", "Médico creado correctamente", "success");
       }
       navigate("/medico");
     } catch (error) {
@@ -281,6 +303,7 @@ export default function Component() {
               {...register("name", { required: "El nombre es requerido" })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
               placeholder="Ingrese el nombre"
+              readOnly={isEditing}
             />
             {errors.name && (
               <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
@@ -297,6 +320,7 @@ export default function Component() {
               })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
               placeholder="Ingrese el apellido"
+              readOnly={isEditing}
             />
             {errors.lastname && (
               <p className="text-red-500 text-xs mt-1">
@@ -319,6 +343,7 @@ export default function Component() {
               })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
               placeholder="ejemplo@correo.com"
+              readOnly={isEditing}
             />
             {errors.email && (
               <p className="text-red-500 text-xs mt-1">
@@ -326,25 +351,27 @@ export default function Component() {
               </p>
             )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <FiLock className="inline-block mr-2" />
-              Contraseña:
-            </label>
-            <input
-              type="password"
-              {...register("password", {
-                required: "La contraseña es requerida"
-              })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-              placeholder="Ingrese la contraseña"
-            />
-            {errors.password && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
+          {!isEditing && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <FiLock className="inline-block mr-2" />
+                Contraseña:
+              </label>
+              <input
+                type="password"
+                {...register("password", {
+                  required: "La contraseña es requerida"
+                })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                placeholder="Ingrese la contraseña"
+              />
+              {errors.password && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               <FiUser className="inline-block mr-2" />
@@ -361,6 +388,7 @@ export default function Component() {
               })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
               placeholder="Ingrese el CI (mínimo 6 dígitos)"
+              readOnly={isEditing}
             />
             {errors.ci && (
               <p className="text-red-500 text-xs mt-1">{errors.ci.message}</p>
@@ -374,6 +402,7 @@ export default function Component() {
             <select
               {...register("genero", { required: "El género es requerido" })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+              disabled={isEditing}
             >
               <option value="" disabled>
                 Seleccione el género
@@ -412,6 +441,7 @@ export default function Component() {
                   scrollableYearDropdown
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                   placeholderText="Seleccione la fecha de nacimiento"
+                  disabled={isEditing}
                 />
               )}
             />

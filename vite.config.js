@@ -74,22 +74,11 @@ export default defineConfig({
     })
   ],
   build: {
-    
-    sourcemap: false, // Desactiva los sourcemaps en producción
-    
-    // Configuración para ignorar ciertos tipos de advertencias o errores
-    terserOptions: {
-      compress: {
-        drop_console: true, // Omitir logs de consola
-        drop_debugger: true // Omitir debuggers
-      }
+    target: 'esnext', // This enables top-level await
+  },
+  esbuild: {
+    supported: {
+      'top-level-await': true // This also helps with top-level await support
     },
-    // Para evitar que build se detenga ante advertencias
-    ignoreWarnings: [
-      {
-        // Ignorar advertencias específicas, si las conoces puedes filtrarlas aquí
-        message: /Circular dependency/i
-      }
-    ]
-  }
+  },
 });

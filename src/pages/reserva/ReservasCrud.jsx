@@ -22,12 +22,13 @@ import {
   crearReserva,
   actualizarReserva,
   obtenerReservaPorId,
-  obtenerTodasReservas
+  obtenerTodasReservas,
+  obtenerCalendario
 } from "../../api/reservaapi";
 import { obtenerTodasEspecialidades } from "../../api/especialidadesapi";
 import { obtenerMedicosdeEspecialidad } from "../../api/reservaapi";
+import { obtenerMedicoPorId } from "../../api/medicoapi";
 import { obtenerTodosPacientes } from "../../api/pacienteapi";
-import { obtenerCalendario } from "../../api/reservaapi";
 import useAuth from "../../hooks/auth.hook";
 import { CalendarOutlined, ClockCircleOutlined, UserOutlined, MedicineBoxOutlined, SearchOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons';
 import locale from 'antd/es/date-picker/locale/es_ES';
@@ -41,8 +42,9 @@ export default function ReservasCrud() {
     auth: { _id, roles }
   } = useAuth();
 
-  const isPaciente = roles.includes("paciente");
-  const isMedico = roles.includes("medico");
+  const isPaciente = roles.some(role => role.name === "paciente");
+  const isMedico = roles.some(role => role.name === "medico");
+  const isAdminOrRecepcionista = roles.some(role => role.name === "admin" || role.name === "recepcionista");
 
   const [reserva, setReserva] = useState({
     pacienteId: isPaciente ? _id : "",
@@ -75,14 +77,25 @@ export default function ReservasCrud() {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [especialidadesData, pacientesData] = await Promise.all([
-        obtenerTodasEspecialidades(),
+      const [pacientesData] = await Promise.all([
         obtenerTodosPacientes()
       ]);
 
-      setEspecialidades(especialidadesData.especialidades);
       setPacientes(pacientesData);
       setFilteredPacientes(pacientesData);
+
+      if (isMedico) {
+        const medicoData = await obtenerMedicoPorId(_id);
+        if (medicoData.response === "success" && medicoData.medico) {
+          const medicoEspecialidades = medicoData.medico.especialidades;
+          setEspecialidades(medicoEspecialidades);
+        } else {
+          throw new Error("Error al obtener los datos del médico");
+        }
+      } else {
+        const especialidadesData = await obtenerTodasEspecialidades();
+        setEspecialidades(especialidadesData.especialidades);
+      }
 
       if (id) {
         setIsEditing(true);
@@ -95,8 +108,12 @@ export default function ReservasCrud() {
           horaInicio: reservaData.horaInicio
         });
 
-        await handleEspecialidadChange(reservaData.especialidad_solicitada._id);
-        await handleMedicoChange(reservaData.medico._id);
+        if (!isMedico) {
+          await handleEspecialidadChange(reservaData.especialidad_solicitada._id);
+          await handleMedicoChange(reservaData.medico._id);
+        } else {
+          await handleEspecialidadChange(reservaData.especialidad_solicitada._id);
+        }
       }
     } catch (error) {
       console.error("Error fetching initial data:", error);
@@ -108,16 +125,27 @@ export default function ReservasCrud() {
 
   const handleEspecialidadChange = async (especialidadId) => {
     setLoading(true);
-    setReserva({ ...reserva, especialidadId, medicoId: "" });
+    setReserva({ ...reserva, especialidadId, medicoId: isMedico ? _id : "" });
     try {
-      const response = await obtenerMedicosdeEspecialidad(especialidadId);
-      setMedicos(response.medicos);
+      if (isMedico) {
+        const response = await obtenerCalendario(_id, especialidadId);
+        if (response.response === "success") {
+          setCalendario(response.calendario);
+          setCurrentStep(1);
+        } else {
+          message.warning("No hay disponibilidad para el médico seleccionado");
+          setCalendario([]);
+        }
+      } else {
+        const response = await obtenerMedicosdeEspecialidad(especialidadId);
+        setMedicos(response.medicos);
+        setCurrentStep(1);
+      }
     } catch (error) {
-      console.error("Error fetching medicos:", error);
-      message.error("Error al obtener los médicos de la especialidad");
+      console.error("Error fetching data:", error);
+      message.error("Error al obtener los datos necesarios");
     } finally {
       setLoading(false);
-      setCurrentStep(1);
     }
   };
 
@@ -127,7 +155,7 @@ export default function ReservasCrud() {
 
     try {
       const response = await obtenerCalendario(medicoId, reserva.especialidadId);
-      if (response.response === "success" && response.calendario) {
+      if (response.response === "success") {
         setCalendario(response.calendario);
         setCurrentStep(2);
       } else {
@@ -144,12 +172,12 @@ export default function ReservasCrud() {
 
   const handleDateChange = (date) => {
     const selectedDate = date.format("YYYY-MM-DD");
-    const diaSeleccionado = calendario.find(
+    const disponibilidadesDia = calendario.find(
       (dia) => dia.fecha === selectedDate
     );
 
-    if (diaSeleccionado) {
-      const intervalosLibres = diaSeleccionado.intervalos.filter(
+    if (disponibilidadesDia) {
+      const intervalosLibres = disponibilidadesDia.intervalos.filter(
         (intervalo) => intervalo.estado === "LIBRE"
       );
       setHorasDisponibles(intervalosLibres);
@@ -162,7 +190,7 @@ export default function ReservasCrud() {
 
   const handleHourChange = (hora) => {
     setReserva({ ...reserva, horaInicio: hora });
-    setCurrentStep(3);
+    setCurrentStep(isMedico ? 2 : 3);
   };
 
   const handleSubmit = async (e) => {
@@ -194,17 +222,21 @@ export default function ReservasCrud() {
   };
 
   const disabledDate = (current) => {
-    const fechasDisponibles = calendario.map((dia) => dia.fecha);
-    return !fechasDisponibles.includes(current.format("YYYY-MM-DD"));
+    const today = moment().startOf('day');
+    if (current && current < today) {
+      return true;
+    }
+    const fechaString = current.format("YYYY-MM-DD");
+    return !calendario.some(dia => dia.fecha === fechaString);
   };
 
   const dateRender = (current) => {
     const dateString = current.format("YYYY-MM-DD");
-    const diaCalendario = calendario.find(
+    const disponibilidadesDia = calendario.find(
       (dia) => dia.fecha === dateString
     );
 
-    if (!diaCalendario) {
+    if (!disponibilidadesDia) {
       return (
         <Tooltip title="No disponible">
           <div
@@ -217,47 +249,23 @@ export default function ReservasCrud() {
       );
     }
 
-    const intervalosLibres = diaCalendario.intervalos.filter(
+    const tieneDisponibilidad = disponibilidadesDia.intervalos.some(
       (intervalo) => intervalo.estado === "LIBRE"
     );
-    const intervalosOcupados = diaCalendario.intervalos.filter(
-      (intervalo) => intervalo.estado === "OCUPADO"
-    );
 
-    if (intervalosLibres.length === 0) {
-      return (
-        <Tooltip title="Completamente ocupado">
-          <div
-            className="ant-picker-cell-inner"
-            style={{ backgroundColor: "#FFCDD2", color: "black" }}
-          >
-            {current.date()}
-          </div>
-        </Tooltip>
-      );
-    } else if (intervalosOcupados.length > 0) {
-      return (
-        <Tooltip title="Parcialmente disponible">
-          <div
-            className="ant-picker-cell-inner"
-            style={{ backgroundColor: "#ffc107", color: "black" }}
-          >
-            {current.date()}
-          </div>
-        </Tooltip>
-      );
-    } else {
-      return (
-        <Tooltip title="Totalmente disponible">
-          <div
-            className="ant-picker-cell-inner"
-            style={{ backgroundColor: "#28a745", color: "white" }}
-          >
-            {current.date()}
-          </div>
-        </Tooltip>
-      );
-    }
+    return (
+      <Tooltip title={tieneDisponibilidad ? "Disponible" : "No disponible"}>
+        <div
+          className="ant-picker-cell-inner"
+          style={{
+            backgroundColor: tieneDisponibilidad ? "#28a745" : "#dc3545",
+            color: "white"
+          }}
+        >
+          {current.date()}
+        </div>
+      </Tooltip>
+    );
   };
 
   const fuse = useMemo(() => {
@@ -365,31 +373,7 @@ export default function ReservasCrud() {
           </div>
         );
       case 1:
-        return (
-          <div>
-            <label
-              htmlFor="medicoId"
-              className="block text-sm font-medium mb-1"
-            >
-              Médico:
-            </label>
-            <Select
-              id="medicoId"
-              value={reserva.medicoId}
-              onChange={handleMedicoChange}
-              className="w-full"
-              placeholder="Seleccione un médico"
-            >
-              {medicos.map((medico) => (
-                <Option key={medico.id} value={medico.id}>
-                  Dr. {medico.nombre}
-                </Option>
-              ))}
-            </Select>
-          </div>
-        );
-      case 2:
-        return (
+        return isMedico ? (
           <div className="space-y-4">
             <div>
               <label
@@ -411,19 +395,11 @@ export default function ReservasCrud() {
                 <ul className="space-y-2">
                   <li className="flex items-center">
                     <span className="inline-block w-4 h-4 mr-2 bg-green-500 rounded-full"></span>
-                    <span className="text-sm">Verde: Día totalmente disponible</span>
-                  </li>
-                  <li className="flex items-center">
-                    <span className="inline-block w-4 h-4 mr-2 bg-yellow-500 rounded-full"></span>
-                    <span className="text-sm">Amarillo: Día parcialmente disponible</span>
-                  </li>
-                  <li className="flex items-center">
-                    <span className="inline-block w-4 h-4 mr-2 bg-red-300 rounded-full"></span>
-                    <span className="text-sm">Rojo claro: Día completamente ocupado</span>
+                    <span className="text-sm">Verde: Día disponible</span>
                   </li>
                   <li className="flex items-center">
                     <span className="inline-block w-4 h-4 mr-2 bg-red-600 rounded-full"></span>
-                    <span className="text-sm">Rojo oscuro: Día no disponible</span>
+                    <span className="text-sm">Rojo: Día no disponible</span>
                   </li>
                 </ul>
               </div>
@@ -452,6 +428,114 @@ export default function ReservasCrud() {
               </div>
             )}
           </div>
+        ) : (
+          <div>
+            <label
+              htmlFor="medicoId"
+              className="block text-sm font-medium mb-1"
+            >
+              Médico:
+            </label>
+            <Select
+              id="medicoId"
+              value={reserva.medicoId}
+              onChange={handleMedicoChange}
+              className="w-full"
+              placeholder="Seleccione un médico"
+            >
+              {medicos.map((medico) => (
+                <Option key={medico.id} value={medico.id}>
+                  Dr. {medico.nombre}
+                </Option>
+              ))}
+            </Select>
+          </div>
+        );
+      case 2:
+        return !isMedico ? (
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="fechaReserva"
+                className="block text-sm font-medium mb-1"
+              >
+                Fecha de Reserva:
+              </label>
+              <DatePicker
+                id="fechaReserva"
+                onChange={handleDateChange}
+                className="w-full"
+                disabledDate={disabledDate}
+                dateRender={dateRender}
+                locale={locale}
+              />
+              <div className="mt-4 p-4 rounded-lg bg-opacity-50 backdrop-filter backdrop-blur-lg">
+                <h4 className="text-sm font-medium mb-2">Guía de colores:</h4>
+                <ul className="space-y-2">
+                  <li className="flex items-center">
+                    <span className="inline-block w-4 h-4 mr-2 bg-green-500 rounded-full"></span>
+                    <span className="text-sm">Verde: Día disponible</span>
+                  </li>
+                  <li className="flex items-center">
+                    <span className="inline-block w-4 h-4 mr-2 bg-red-600 rounded-full"></span>
+                    <span className="text-sm">Rojo: Día no disponible</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            {horasDisponibles.length > 0 && (
+              <div>
+                <label
+                  htmlFor="horaInicio"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Hora de Inicio:
+                </label>
+                <Select
+                  id="horaInicio"
+                  value={reserva.horaInicio}
+                  onChange={handleHourChange}
+                  className="w-full"
+                  placeholder="Seleccione una hora"
+                >
+                  {horasDisponibles.map((intervalo) => (
+                    <Option key={intervalo.inicio} value={intervalo.inicio}>
+                      {intervalo.inicio}
+                    </Option>
+                  ))}
+                </Select>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4 p-6 rounded-lg bg-opacity-50 backdrop-filter backdrop-blur-lg">
+            <h3 className="text-xl font-semibold mb-4">
+              Resumen de la Reprogramación
+            </h3>
+            {!isPaciente && (
+              <p className="flex items-center">
+                <UserOutlined className="mr-2" />
+                <strong className="mr-2">Paciente:</strong>
+                {pacientes.find((p) => p._id === reserva.pacienteId)?.name}{" "}
+                {pacientes.find((p) => p._id === reserva.pacienteId)?.lastname}
+              </p>
+            )}
+            <p className="flex items-center">
+              <MedicineBoxOutlined className="mr-2" />
+              <strong className="mr-2">Especialidad:</strong>
+              {especialidades.find((e) => e._id === reserva.especialidadId)?.name}
+            </p>
+            <p className="flex items-center">
+              <CalendarOutlined className="mr-2" />
+              <strong className="mr-2">Fecha:</strong>
+              {moment(reserva.fechaReserva).format("DD/MM/YYYY")}
+            </p>
+            <p className="flex items-center">
+              <ClockCircleOutlined className="mr-2" />
+              <strong className="mr-2">Hora:</strong>
+              {reserva.horaInicio}
+            </p>
+          </div>
         );
       case 3:
         return (
@@ -472,11 +556,14 @@ export default function ReservasCrud() {
               <strong className="mr-2">Especialidad:</strong>
               {especialidades.find((e) => e._id === reserva.especialidadId)?.name}
             </p>
-            <p className="flex items-center">
-              <UserOutlined className="mr-2" />
-              <strong className="mr-2">Médico:</strong>
-              {medicos.find((m) => m.id === reserva.medicoId)?.nombre}
-            </p>
+            {!isMedico && (
+              <p className="flex items-center">
+                <UserOutlined className="mr-2" />
+                <strong className="mr-2">Médico:</strong>
+                {medicos.find((m) => m._id === reserva.medicoId)?.name}{" "}
+                {medicos.find((m) => m._id === reserva.medicoId)?.lastname}
+              </p>
+            )}
             <p className="flex items-center">
               <CalendarOutlined className="mr-2" />
               <strong className="mr-2">Fecha:</strong>
@@ -500,7 +587,7 @@ export default function ReservasCrud() {
         <div className="max-w-3xl mx-auto bg-opacity-80 backdrop-filter backdrop-blur-lg p-8 rounded-lg shadow-lg">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold">
-              {isEditing ? "Editar Reserva" : "Nueva Reserva"}
+              {isEditing ? (isMedico ? "Reprogramar Reserva" : "Editar Reserva") : "Nueva Reserva"}
             </h1>
             <Switch
               checkedChildren={<MoonOutlined />}
@@ -511,7 +598,7 @@ export default function ReservasCrud() {
           </div>
           <Steps current={currentStep} className="mb-8">
             <Step title="Paciente y Especialidad" />
-            <Step title="Médico" />
+            {!isMedico && <Step title="Médico" />}
             <Step title="Fecha y Hora" />
             <Step title="Confirmar" />
           </Steps>
@@ -523,24 +610,24 @@ export default function ReservasCrud() {
                   Anterior
                 </Button>
               )}
-              {currentStep < 3 && (
+              {currentStep < (isMedico ? 2 : 3) && (
                 <Button
                   type="primary"
                   onClick={() => setCurrentStep(currentStep + 1)}
                   disabled={
                     (currentStep === 0 &&
                       (!reserva.pacienteId || !reserva.especialidadId)) ||
-                    (currentStep === 1 && !reserva.medicoId) ||
-                    (currentStep === 2 &&
+                    (currentStep === 1 && !isMedico && !reserva.medicoId) ||
+                    (currentStep === (isMedico ? 1 : 2) &&
                       (!reserva.fechaReserva || !reserva.horaInicio))
                   }
                 >
                   Siguiente
                 </Button>
               )}
-              {currentStep === 3 && (
+              {currentStep === (isMedico ? 2 : 3) && (
                 <Button type="primary" htmlType="submit" className="w-full">
-                  {isEditing ? "Actualizar Reserva" : "Crear Reserva"}
+                  {isEditing ? (isMedico ? "Reprogramar Reserva" : "Actualizar Reserva") : "Crear Reserva"}
                 </Button>
               )}
             </div>

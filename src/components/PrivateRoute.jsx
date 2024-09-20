@@ -9,7 +9,7 @@ const PrivateRoute = ({ element: Element, allowedRoles, ...rest }) => {
     isLoading
   } = useAuth();
 
-  if (isLoading) return <div>Cargando...</div>;
+  if (isLoading) return <div>Cargaaaaaaaaaaaando...</div>;
 
   const hasAccess = roles.some((role) => allowedRoles.includes(role.name));
 

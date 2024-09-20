@@ -10,7 +10,7 @@ import LoginPage from "./pages/auth/login.page";
 import RegisterPage from "./pages/auth/register.page";
 import PasswordPage from "./pages/auth/forgot-password.page";
 import PasswordResetPage from "./pages/auth/reset-password.page";
-import DashboardPage from "./pages/admin/dashboard.page";
+import DashboardPage from "./pages/store/home.page";
 import UsersPage from "./pages/admin/users.page";
 import ProductsPage from "./pages/admin/products.page";
 import Medicos from "./pages/medico/Medicos";

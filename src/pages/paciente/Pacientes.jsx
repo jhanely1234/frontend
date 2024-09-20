@@ -284,7 +284,7 @@ export default function Pacientes() {
                 <div><span className="font-semibold">CI:</span> {paciente.ci}</div>
                 <div><span className="font-semibold">Edad:</span> {paciente.edad}</div>
                 <div><span className="font-semibold">Teléfono:</span> {paciente.telefono}</div>
-                <div><span className="font-semibold">Sexo:</span> {paciente.sexo}</div>
+                <div><span className="font-semibold">Sexo:</span> {paciente.genero}</div>
               </div>
             </div>
           ))}
@@ -320,7 +320,7 @@ export default function Pacientes() {
                             </div>
                             <div className="flex items-center">
                               <Users className="text-gray-400 mr-2" size={20} />
-                              <span>{selectedPaciente.sexo}</span>
+                              <span>{selectedPaciente.genero}</span>
                             </div>
                             <div className="flex items-center">
                               <Calendar className="text-gray-400 mr-2" size={20} />

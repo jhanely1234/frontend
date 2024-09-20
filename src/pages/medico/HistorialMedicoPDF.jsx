@@ -130,7 +130,7 @@ const HistorialMedicoPDF = ({ paciente, historial }) => {
         <View style={styles.infoSection}>
           <View style={styles.infoColumn}>
             <View style={styles.infoRow}>
-              <Text style={styles.label}>PATIENT</Text>
+              <Text style={styles.label}>PACIENTE</Text>
               <Text style={styles.value}>{paciente.name} {paciente.lastname}</Text>
             </View>
             <View style={styles.infoRow}>
@@ -138,11 +138,11 @@ const HistorialMedicoPDF = ({ paciente, historial }) => {
               <Text style={styles.value}>{paciente.email}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.label}>WEIGHT</Text>
+              <Text style={styles.label}>PESO</Text>
               <Text style={styles.value}>{latestConsulta?.signos_vitales[0]?.peso || 'N/A'}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.label}>HEIGHT</Text>
+              <Text style={styles.label}>TALLA</Text>
               <Text style={styles.value}>{latestConsulta?.signos_vitales[0]?.talla || 'N/A'}</Text>
             </View>
           </View>
@@ -152,15 +152,15 @@ const HistorialMedicoPDF = ({ paciente, historial }) => {
               <Text style={styles.value}>{latestConsulta?.citaMedica.medico.name} {latestConsulta?.citaMedica.medico.lastname}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.label}>TEMPERATURE</Text>
+              <Text style={styles.label}>TEMPERATURA</Text>
               <Text style={styles.value}>{latestConsulta?.signos_vitales[0]?.Temperatura || 'N/A'}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.label}>HEART RATE</Text>
+              <Text style={styles.label}>SIGNOS VITALES</Text>
               <Text style={styles.value}>{latestConsulta?.signos_vitales[0]?.Fc || 'N/A'}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.label}>RESP. RATE</Text>
+              <Text style={styles.label}>FRECUENCIA RESPIRATORIA</Text>
               <Text style={styles.value}>{latestConsulta?.signos_vitales[0]?.Fr || 'N/A'}</Text>
             </View>
           </View>
@@ -168,9 +168,9 @@ const HistorialMedicoPDF = ({ paciente, historial }) => {
 
         <View style={styles.table}>
           <View style={[styles.tableRow, styles.tableHeader]}>
-            <Text style={styles.tableCell}>DATE</Text>
-            <Text style={styles.tableCell}>SPECIALTY</Text>
-            <Text style={styles.tableCell}>DIAGNOSIS</Text>
+            <Text style={styles.tableCell}>DIA</Text>
+            <Text style={styles.tableCell}>ESPECIALIDAD</Text>
+            <Text style={styles.tableCell}>DIAGNOSTICO</Text>
           </View>
           {sortedConsultas.map((consulta, index) => (
             <View key={index} style={styles.tableRow}>
@@ -183,12 +183,12 @@ const HistorialMedicoPDF = ({ paciente, historial }) => {
 
         <View style={styles.notesSection}>
           <View style={styles.notes}>
-            <Text style={styles.sectionTitle}>LATEST MEDICAL NOTE</Text>
-            <Text>{latestConsulta?.motivo_consulta || 'No medical notes available.'}</Text>
+            <Text style={styles.sectionTitle}>Ultima Nota Medica</Text>
+            <Text>{latestConsulta?.motivo_consulta || 'Notas Medicas no disponibles.'}</Text>
           </View>
           <View style={styles.allergies}>
-            <Text style={styles.sectionTitle}>LATEST PRESCRIPTION</Text>
-            <Text>{latestConsulta?.receta || 'No prescription available.'}</Text>
+            <Text style={styles.sectionTitle}>Ultima Prescripcion</Text>
+            <Text>{latestConsulta?.receta || 'Prescripcion no disponilbe.'}</Text>
           </View>
         </View>
       </Page>

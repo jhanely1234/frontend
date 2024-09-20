@@ -108,6 +108,20 @@ export const obtenerMedicoPorId = async (id) => {
     throw error;
   }
 };
+export const obtenerMedicoPorId2 = async (id) => {
+  try {
+    const respuesta = await api.get(`/datos/${id}`);
+    console.log("Respuesta:", respuesta.data);
+    return respuesta.data;
+  } catch (error) {
+    MySwal.fire({
+      icon: "error",
+      title: "Error",
+      text: error.response?.data?.message || "Error al obtener el médico"
+    });
+    throw error;
+  }
+};
 
 export const crearMedico = async (datosMedico) => {
   try {
