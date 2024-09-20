@@ -1,16 +1,14 @@
 import axios from "axios";
-import Swal from "sweetalert2";
+import { toast } from "react-toastify"; // Importar react-toastify
 
-// URLs de los servidores usando variables de entorno de Vite
-let serverPrimary = `${import.meta.env.VITE_URL_DOCKER}:3006/api/paciente`;
-let serverBackup = `${import.meta.env.VITE_URL_BACKUP}/api/paciente`;
+// URL del servidor usando variable de entorno de Vite
+let serverPrimary = `${import.meta.env.VITE_URL_MICROSERVICE_PACIENTE}/paciente`;
 let currentServer = serverPrimary; // Servidor actual
-let useBackupServer = false; // Bandera para usar el servidor de respaldo
 
 // Crear una instancia de Axios
 const api = axios.create({
   baseURL: serverPrimary,
-  timeout: 5000 // Timeout de las solicitudes a 5 segundos
+  timeout: 5000, // Timeout de las solicitudes a 5 segundos
 });
 
 // Función para verificar la disponibilidad del servidor, considerando el token
@@ -19,9 +17,9 @@ const checkServerAvailability = async (url) => {
   try {
     await axios.get(url, {
       headers: {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      timeout: 1000
+      timeout: 1000,
     });
     return true;
   } catch (error) {
@@ -36,27 +34,18 @@ const initializeServerConnection = async () => {
     console.log("Conectado al servidor principal:", serverPrimary);
     currentServer = serverPrimary;
   } else {
-    console.warn(
-      "Servidor principal no disponible. Intentando con el servidor de respaldo..."
+    console.error("El servidor principal no está disponible.");
+    toast.error(
+      "El servidor no está disponible. Por favor, intente de nuevo más tarde.",
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
     );
-    const isBackupAvailable = await checkServerAvailability(serverBackup);
-    if (isBackupAvailable) {
-      console.log(
-        "Conexión exitosa con el servidor de respaldo:",
-        serverBackup
-      );
-      api.defaults.baseURL = serverBackup;
-      currentServer = serverBackup;
-      useBackupServer = true;
-    } else {
-      console.error("El servidor de respaldo tampoco está disponible");
-      Swal.fire({
-        icon: "error",
-        title: "Error de Conexión",
-        text: "El servidor de respaldo tampoco está disponible. Por favor, intente de nuevo más tarde.",
-        confirmButtonText: "Aceptar"
-      });
-    }
   }
 };
 
@@ -84,11 +73,17 @@ export const obtenerTodosPacientes = async () => {
     const respuesta = await api.get("/");
     return respuesta.data;
   } catch (error) {
-    Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: error.response?.data?.message || "Error al obtener los pacientes"
-    });
+    toast.error(
+      error.response?.data?.message || "Error al obtener los pacientes",
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
+    );
     return Promise.reject(error);
   }
 };
@@ -98,7 +93,17 @@ export const obtenerPacientePorId = async (id) => {
     const respuesta = await api.get(`/${id}`);
     return respuesta.data;
   } catch (error) {
-    Swal.fire("Error", error.response.data.message, "error");
+    toast.error(
+      error.response?.data?.message || "Error al obtener el paciente",
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
+    );
     return Promise.reject(error);
   }
 };
@@ -106,13 +111,26 @@ export const obtenerPacientePorId = async (id) => {
 export const crearPaciente = async (datosPaciente) => {
   try {
     const respuesta = await api.post("/create/", datosPaciente);
-    Swal.fire("Éxito", respuesta.data.message, "success");
+    toast.success(respuesta.data.message, {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
     return respuesta.data;
   } catch (error) {
-    Swal.fire(
-      "Error",
+    toast.error(
       error.response?.data?.message || "Ocurrió un error al crear el paciente.",
-      "error"
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
     );
     return Promise.reject(error);
   }
@@ -121,39 +139,62 @@ export const crearPaciente = async (datosPaciente) => {
 export const actualizarPaciente = async (id, datosPaciente) => {
   try {
     const respuesta = await api.put(`/${id}`, datosPaciente);
-    Swal.fire("Éxito", respuesta.data.message, "success");
+    toast.success(respuesta.data.message, {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
     return respuesta.data;
   } catch (error) {
-    Swal.fire({
-      title: "Error",
-      text:
-        error.response?.data?.message ||
+    toast.error(
+      error.response?.data?.message ||
         "Ocurrió un error al actualizar el paciente.",
-      icon: "error"
-    });
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
+    );
     return Promise.reject(error);
   }
 };
 
 export const eliminarPaciente = async (id) => {
-  const confirmacion = await Swal.fire({
-    title: "¿Estás seguro?",
-    text: "¡No podrás revertir esta acción!",
-    icon: "warning",
-    showCancelButton: true,
-    cancelButtonText: "Cancelar",
-    confirmButtonText: "Sí, eliminar",
-    confirmButtonColor: "#3085d6",
-    cancelButtonColor: "#d33"
-  });
+  const confirmacion = window.confirm(
+    "¿Estás seguro de que quieres eliminar este paciente? ¡Esta acción no se puede deshacer!"
+  );
 
-  if (confirmacion.isConfirmed) {
+  if (confirmacion) {
     try {
       const respuesta = await api.delete(`/${id}`);
-      Swal.fire("Eliminado", respuesta.data.message, "success");
+      toast.success("Paciente eliminado correctamente", {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       return respuesta.data;
     } catch (error) {
-      Swal.fire("Error", error.response.data.message, "error");
+      toast.error(
+        error.response?.data?.message ||
+          "Ocurrió un error al eliminar el paciente.",
+        {
+          position: "bottom-right",
+          autoClose: 5000,
+          hideProgressBar: true,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        }
+      );
       return Promise.reject(error);
     }
   }

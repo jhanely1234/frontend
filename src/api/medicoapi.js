@@ -1,18 +1,13 @@
 import axios from "axios";
-import Swal from "sweetalert2"; // Importar SweetAlert2
-import withReactContent from "sweetalert2-react-content";
+import { toast } from "react-toastify"; // Importar react-toastify
 
-const MySwal = withReactContent(Swal);
-
-// URLs de los servidores usando variables de entorno de Vite
-let serverPrimary = `${import.meta.env.VITE_URL_DOCKER}:3000/api/medico`;
-let serverBackup = `${import.meta.env.VITE_URL_BACKUP}/api/medico`;
+// URL del servidor usando variable de entorno de Vite
+let serverPrimary = `${import.meta.env.VITE_URL_MICROSERVICE_MEDICO}/medico`;
 let currentServer = serverPrimary; // Servidor actual
-let useBackupServer = false; // Bandera para usar el servidor de respaldo
 
 // Crear una instancia de Axios
 const api = axios.create({
-  baseURL: serverPrimary
+  baseURL: serverPrimary,
 });
 
 // Función para verificar la disponibilidad del servidor, considerando el token
@@ -21,8 +16,8 @@ const checkServerAvailability = async (url) => {
   try {
     await axios.get(url, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
     return true;
   } catch (error) {
@@ -37,27 +32,18 @@ const initializeServerConnection = async () => {
     console.log("Conectado al servidor principal:", serverPrimary);
     currentServer = serverPrimary;
   } else {
-    console.warn(
-      "Servidor principal no disponible. Intentando con el servidor de respaldo..."
+    console.error("El servidor principal no está disponible.");
+    toast.error(
+      "El servidor no está disponible. Por favor, intente de nuevo más tarde.",
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
     );
-    const isBackupAvailable = await checkServerAvailability(serverBackup);
-    if (isBackupAvailable) {
-      console.log(
-        "Conexión exitosa con el servidor de respaldo:",
-        serverBackup
-      );
-      api.defaults.baseURL = serverBackup;
-      currentServer = serverBackup;
-      useBackupServer = true;
-    } else {
-      console.error("El servidor de respaldo tampoco está disponible");
-      MySwal.fire({
-        icon: "error",
-        title: "Error de Conexión",
-        text: "El servidor de respaldo tampoco está disponible. Por favor, intente de nuevo más tarde.",
-        confirmButtonText: "Aceptar"
-      });
-    }
   }
 };
 
@@ -85,11 +71,17 @@ export const obtenerTodosMedicos = async () => {
     const respuesta = await api.get("/");
     return respuesta.data;
   } catch (error) {
-    MySwal.fire({
-      icon: "error",
-      title: "Error",
-      text: error.response?.data?.message || "Error al obtener los médicos"
-    });
+    toast.error(
+      error.response?.data?.message || "Error al obtener los médicos",
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
+    );
     throw error;
   }
 };
@@ -100,24 +92,31 @@ export const obtenerMedicoPorId = async (id) => {
     console.log("Respuesta:", respuesta.data);
     return respuesta.data;
   } catch (error) {
-    MySwal.fire({
-      icon: "error",
-      title: "Error",
-      text: error.response?.data?.message || "Error al obtener el médico"
+    toast.error(error.response?.data?.message || "Error al obtener el médico", {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
     });
     throw error;
   }
 };
+
 export const obtenerMedicoPorId2 = async (id) => {
   try {
     const respuesta = await api.get(`/datos/${id}`);
     console.log("Respuesta:", respuesta.data);
     return respuesta.data;
   } catch (error) {
-    MySwal.fire({
-      icon: "error",
-      title: "Error",
-      text: error.response?.data?.message || "Error al obtener el médico"
+    toast.error(error.response?.data?.message || "Error al obtener el médico", {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
     });
     throw error;
   }
@@ -126,18 +125,27 @@ export const obtenerMedicoPorId2 = async (id) => {
 export const crearMedico = async (datosMedico) => {
   try {
     const respuesta = await api.post("/register/", datosMedico);
-    MySwal.fire({
-      icon: "success",
-      title: "Éxito",
-      text: respuesta.data.message
+    toast.success(respuesta.data.message, {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
     });
     return respuesta.data;
   } catch (error) {
-    MySwal.fire({
-      icon: "error",
-      title: "Error",
-      text: error.response?.data?.message
-    });
+    toast.error(
+      error.response?.data?.message || "Error al registrar el médico",
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
+    );
     throw error;
   }
 };
@@ -145,18 +153,27 @@ export const crearMedico = async (datosMedico) => {
 export const actualizarMedico = async (id, datosMedico) => {
   try {
     const respuesta = await api.put(`/${id}`, datosMedico);
-    MySwal.fire({
-      icon: "success",
-      title: "Éxito",
-      text: respuesta.data.message
+    toast.success(respuesta.data.message, {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
     });
     return respuesta.data;
   } catch (error) {
-    MySwal.fire({
-      icon: "error",
-      title: "Error",
-      text: error.response?.data?.message || "Error al actualizar el médico"
-    });
+    toast.error(
+      error.response?.data?.message || "Error al actualizar el médico",
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
+    );
     throw error;
   }
 };
@@ -164,18 +181,27 @@ export const actualizarMedico = async (id, datosMedico) => {
 export const eliminarMedico = async (id) => {
   try {
     const respuesta = await api.delete(`/${id}`);
-    MySwal.fire({
-      icon: "success",
-      title: "Eliminado",
-      text: respuesta.data.message
+    toast.success(respuesta.data.message, {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
     });
     return respuesta.data;
   } catch (error) {
-    MySwal.fire({
-      icon: "error",
-      title: "Error",
-      text: error.response?.data?.message || "Error al eliminar el médico"
-    });
+    toast.error(
+      error.response?.data?.message || "Error al eliminar el médico",
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
+    );
     throw error;
   }
 };
@@ -185,13 +211,18 @@ export const obtenerMedicosPorEspecialidad = async (id) => {
     const respuesta = await api.get(`/especialidad/${id}`);
     return respuesta.data;
   } catch (error) {
-    MySwal.fire({
-      icon: "error",
-      title: "Error",
-      text:
-        error.response?.data?.message ||
-        "Error al obtener médicos por especialidad"
-    });
+    toast.error(
+      error.response?.data?.message ||
+        "Error al obtener médicos por especialidad",
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
+    );
     throw error;
   }
 };
@@ -203,17 +234,20 @@ export const obtenerEspecialidadesPorMedico = async (medicoId) => {
     console.log("Respuesta:", respuesta.data);
     return respuesta.data;
   } catch (error) {
-    MySwal.fire({
-      icon: "error",
-      title: "Error",
-      text:
-        error.response?.data?.message ||
-        "Error al obtener especialidades del médico"
-    });
-    console.log("Error:", error);
+    toast.error(
+      error.response?.data?.message ||
+        "Error al obtener especialidades del médico",
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
+    );
     throw error;
   }
 };
-
 
 export default api;

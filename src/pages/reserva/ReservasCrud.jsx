@@ -215,7 +215,7 @@ export default function ReservasCrud() {
       navigate("/reservas");
     } catch (error) {
       console.error("Error al guardar la reserva:", error);
-      message.error("Error al guardar la reserva");
+      message.error(error.response.data.message ||"Error al guardar la reserva");
     } finally {
       setLoading(false);
     }
@@ -626,7 +626,7 @@ export default function ReservasCrud() {
                 </Button>
               )}
               {currentStep === (isMedico ? 2 : 3) && (
-                <Button type="primary" htmlType="submit" className="w-full">
+                <Button type="primary" htmlType="submit" className="w-full bg-blue-500">
                   {isEditing ? (isMedico ? "Reprogramar Reserva" : "Actualizar Reserva") : "Crear Reserva"}
                 </Button>
               )}

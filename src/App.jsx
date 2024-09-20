@@ -5,7 +5,6 @@ import Wrapper from "./layouts/Wrapper";
 import Receta from "./pages/receta/receta";
 import Reportes from "./pages/reportes/ReporteConsultas";
 import ResumenReservas from "./pages/reportes/ResumenReservas";
-import HomePage from "./pages/store/home.page";
 import LoginPage from "./pages/auth/login.page";
 import RegisterPage from "./pages/auth/register.page";
 import PasswordPage from "./pages/auth/forgot-password.page";
@@ -29,16 +28,25 @@ import ProductsPageRecepcionista from "./pages/recepcionista/products.page";
 import NotFoundPage from "./pages/404";
 import { AuthProvider } from "./providers/auth.provider";
 import PrivateRoute from "./components/PrivateRoute";
+import { ToastContainer } from "react-toastify"; // Importar ToastContainer
+import "react-toastify/dist/ReactToastify.css"; // Importar los estilos de Toastify
 
 const App = () => {
   return (
     <AuthProvider>
+      {/* ToastContainer para permitir que se muestren los mensajes de toastify */}
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
       <Routes>
-        <Route path="/a" element={<Wrapper />}>
-          <Route index element={<HomePage />} />
-          <Route path="tienda" element={<Wrapper />} />
-          <Route path="nosotros" element={<Wrapper />} />
-        </Route>
         <Route path="/auth" element={<AuthLayout />}>
           <Route path="login" element={<LoginPage />} />
           <Route path="registro" element={<RegisterPage />} />
@@ -49,7 +57,7 @@ const App = () => {
           <Route
             index
             element={
-              <PrivateRoute element={DashboardPage} allowedRoles={["admin"]} />
+              <PrivateRoute element={DashboardPage} allowedRoles={["admin", "medico", "recepcionista", "paciente" ]} />
             }
           />
           <Route

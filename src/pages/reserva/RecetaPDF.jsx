@@ -1,7 +1,6 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Image, Font, Svg, Path } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
 
-// Register custom fonts
 Font.register({
   family: 'Roboto',
   fonts: [
@@ -23,13 +22,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 20,
     alignItems: 'center',
+    borderBottom: 2,
+    borderBottomColor: '#0066cc',
+    paddingBottom: 10,
   },
   logo: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
   },
   doctorInfo: {
-    marginLeft: 10,
+    marginLeft: 15,
+    flex: 1,
   },
   doctorName: {
     fontSize: 24,
@@ -40,32 +43,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#0066cc',
   },
-  patientInfo: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 12,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 15,
+    marginBottom: 5,
     color: '#0066cc',
-    marginRight: 5,
-  },
-  input: {
-    borderBottomWidth: 1,
+    borderBottom: 1,
     borderBottomColor: '#0066cc',
-    fontSize: 12,
     paddingBottom: 2,
-    flex: 1,
   },
-  row: {
+  infoGrid: {
+    display: 'flex',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 10,
   },
-  watermark: {
-    position: 'absolute',
-    top: 200,
-    left: 100,
-    opacity: 0.1,
-    width: 300,
-    height: 300,
+  infoItem: {
+    width: '33%',
+    marginBottom: 5,
+  },
+  label: {
+    fontSize: 10,
+    color: '#666',
+  },
+  value: {
+    fontSize: 12,
+    fontWeight: 'medium',
+  },
+  prescriptionArea: {
+    borderWidth: 1,
+    borderColor: '#0066cc',
+    padding: 10,
+    minHeight: 150,
+    marginTop: 10,
+  },
+  prescriptionText: {
+    fontSize: 12,
+    lineHeight: 1.5,
   },
   footer: {
     position: 'absolute',
@@ -74,115 +89,93 @@ const styles = StyleSheet.create({
     right: 30,
     textAlign: 'center',
     fontSize: 10,
-    color: '#0066cc',
+    color: '#666',
   },
-  waves: {
+  watermark: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  prescriptionArea: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#0066cc',
-    marginBottom: 20,
-    padding: 10,
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    opacity: 0.1,
+    width: 300,
+    height: 300,
   },
 });
 
-const PrescriptionPDF = ({ 
+const InfoItem = ({ label, value }) => (
+  <View style={styles.infoItem}>
+    <Text style={styles.label}>{label}</Text>
+    <Text style={styles.value}>{value || 'N/A'}</Text>
+  </View>
+);
+
+export default function PrescriptionPDF({ 
   doctorName, 
   doctorCredentials, 
   patientName, 
-  patientAge, 
+  patientAge,
+  patientPhone, 
   date, 
   weight, 
+  height,
   fc, 
   fr, 
-  ta, 
   temp,
   logoUrl,
-  prescriptionText
-}) => (
-  <Document>
-    <Page size="A5" style={styles.page}>
-      <View style={styles.header}>
-        <Svg width="50" height="50" viewBox="0 0 50 50">
-          <Path
-            d="M25 0C11.2 0 0 11.2 0 25s11.2 25 25 25 25-11.2 25-25S38.8 0 25 0zm0 45c-11 0-20-9-20-20s9-20 20-20 20 9 20 20-9 20-20 20z"
-            fill="#0066cc"
-          />
-          <Path
-            d="M35 15H25v10h-5v10h5v10h10V35h5V25h-5z"
-            fill="#0066cc"
-          />
-        </Svg>
-        <View style={styles.doctorInfo}>
-          <Text style={styles.doctorName}>{doctorName}</Text>
-          <Text style={styles.doctorCredentials}>{doctorCredentials}</Text>
-        </View>
-      </View>
-
-      <View style={styles.patientInfo}>
-        <View style={styles.row}>
-          <Text style={styles.label}>Paciente:</Text>
-          <Text style={styles.input}>{patientName}</Text>
-        </View>
-        <View style={styles.row}>
-          <View style={{ flexDirection: 'row', flex: 1 }}>
-            <Text style={styles.label}>Edad:</Text>
-            <Text style={styles.input}>{patientAge}</Text>
-          </View>
-          <View style={{ flexDirection: 'row', flex: 1 }}>
-            <Text style={styles.label}>Fecha:</Text>
-            <Text style={styles.input}>{date}</Text>
-          </View>
-          <View style={{ flexDirection: 'row', flex: 1 }}>
-            <Text style={styles.label}>Peso:</Text>
-            <Text style={styles.input}>{weight}</Text>
+  prescriptionText,
+  diagnosis,
+  physicalExam,
+  consultReason
+}) {
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
+          <Image src={logoUrl} style={styles.logo} />
+          <View style={styles.doctorInfo}>
+            <Text style={styles.doctorName}>{doctorName}</Text>
+            <Text style={styles.doctorCredentials}>{doctorCredentials}</Text>
           </View>
         </View>
-        <View style={styles.row}>
-          <View style={{ flexDirection: 'row', flex: 1 }}>
-            <Text style={styles.label}>F.C.</Text>
-            <Text style={styles.input}>{fc}</Text>
-          </View>
-          <View style={{ flexDirection: 'row', flex: 1 }}>
-            <Text style={styles.label}>F.R.</Text>
-            <Text style={styles.input}>{fr}</Text>
-          </View>
-          <View style={{ flexDirection: 'row', flex: 1 }}>
-            <Text style={styles.label}>T.A.</Text>
-            <Text style={styles.input}>{ta}</Text>
-          </View>
-          <View style={{ flexDirection: 'row', flex: 1 }}>
-            <Text style={styles.label}>TEMP.</Text>
-            <Text style={styles.input}>{temp}</Text>
-          </View>
+
+        <Text style={styles.sectionTitle}>Información del Paciente</Text>
+        <View style={styles.infoGrid}>
+          <InfoItem label="Paciente" value={patientName} />
+          <InfoItem label="Edad" value={patientAge} />
+          <InfoItem label="Teléfono" value={patientPhone} />
+          <InfoItem label="Fecha" value={date} />
         </View>
-      </View>
 
-      <View style={styles.prescriptionArea}>
-        <Text>{prescriptionText}</Text>
-      </View>
+        <Text style={styles.sectionTitle}>Signos Vitales</Text>
+        <View style={styles.infoGrid}>
+          <InfoItem label="Peso" value={weight} />
+          <InfoItem label="Talla" value={height} />
+          <InfoItem label="F.C." value={fc} />
+          <InfoItem label="F.R." value={fr} />
+          <InfoItem label="Temp." value={temp} />
+        </View>
 
-      <Image src={logoUrl} style={styles.watermark} />
+        <Text style={styles.sectionTitle}>Motivo de Consulta</Text>
+        <Text style={styles.value}>{consultReason}</Text>
 
-      <View style={styles.footer}>
-        <Text>Calle Cualquiera 123, Cualquier Lugar | (55) 1234-5678</Text>
-        <Text>hola@sitioincreible.com | @sitioincreible</Text>
-      </View>
+        <Text style={styles.sectionTitle}>Examen Físico</Text>
+        <Text style={styles.value}>{physicalExam}</Text>
 
-      <Svg style={styles.waves} width="100%" height="50" viewBox="0 0 1440 320">
-        <Path
-          fill="#e6f2ff"
-          fillOpacity="1"
-          d="M0,32L48,37.3C96,43,192,53,288,80C384,107,480,149,576,154.7C672,160,768,128,864,112C960,96,1056,96,1152,101.3C1248,107,1344,117,1392,122.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
-        />
-      </Svg>
-    </Page>
-  </Document>
-);
+        <Text style={styles.sectionTitle}>Diagnóstico</Text>
+        <Text style={styles.value}>{diagnosis}</Text>
 
-export default PrescriptionPDF;
+        <Text style={styles.sectionTitle}>Receta</Text>
+        <View style={styles.prescriptionArea}>
+          <Text style={styles.prescriptionText}>{prescriptionText}</Text>
+        </View>
+
+        <View style={styles.footer}>
+          <Text>Firma Medico</Text>
+          <Text>{doctorName}</Text>
+        </View>
+
+        <Image src={logoUrl} style={styles.watermark} />
+      </Page>
+    </Document>
+  );
+}

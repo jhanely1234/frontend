@@ -1,17 +1,14 @@
 import axios from "axios";
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
-const MySwal = withReactContent(Swal);
+import { toast } from "react-toastify"; // Importar react-toastify
+
 // URLs de los servidores usando variables de entorno de Vite
-let serverPrimary = `${import.meta.env.VITE_URL_DOCKER}:3000/api/reserva`;
-let serverBackup = `${import.meta.env.VITE_URL_BACKUP}/api/reserva`;
+let serverPrimary = `${import.meta.env.VITE_URL_MICROSERVICE_RESERVA}/reserva`;
 let currentServer = serverPrimary; // Servidor actual
-let useBackupServer = false; // Bandera para usar el servidor de respaldo
 
 // Crear una instancia de Axios
 const api = axios.create({
   baseURL: serverPrimary,
-  timeout: 10000 // Timeout de las solicitudes a 5 segundos
+  timeout: 10000, // Timeout de las solicitudes a 10 segundos
 });
 
 // Función para verificar la disponibilidad del servidor, considerando el token
@@ -20,9 +17,9 @@ const checkServerAvailability = async (url) => {
   try {
     await axios.get(url, {
       headers: {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      timeout: 20000
+      timeout: 20000,
     });
     return true;
   } catch (error) {
@@ -37,27 +34,18 @@ const initializeServerConnection = async () => {
     console.log("Conectado al servidor principal:", serverPrimary);
     currentServer = serverPrimary;
   } else {
-    console.warn(
-      "Servidor principal no disponible. Intentando con el servidor de respaldo..."
+    console.error("El servidor principal no está disponible.");
+    toast.error(
+      "El servidor no está disponible. Por favor, intente de nuevo más tarde.",
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
     );
-    const isBackupAvailable = await checkServerAvailability(serverBackup);
-    if (isBackupAvailable) {
-      console.log(
-        "Conexión exitosa con el servidor de respaldo:",
-        serverBackup
-      );
-      api.defaults.baseURL = serverBackup;
-      currentServer = serverBackup;
-      useBackupServer = true;
-    } else {
-      console.error("El servidor de respaldo tampoco está disponible");
-      Swal.fire({
-        icon: "error",
-        title: "Error de Conexión",
-        text: "El servidor de respaldo tampoco está disponible. Por favor, intente de nuevo más tarde.",
-        confirmButtonText: "Aceptar"
-      });
-    }
   }
 };
 
@@ -79,28 +67,41 @@ api.interceptors.request.use(
   }
 );
 
-const mostrarAlerta = (tipo, mensaje) => {
-  Swal.fire({
-    icon: tipo, // 'success' o 'error'
-    title: tipo === "error" ? "¡Error!" : "¡Éxito!",
-    text: mensaje,
-    confirmButtonColor: "#3085d6", // Color del botón de confirmación
-    confirmButtonText: "Aceptar"
-  });
+// Función para mostrar alertas usando toast
+const mostrarToast = (tipo, mensaje) => {
+  if (tipo === "success") {
+    toast.success(mensaje, {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  } else {
+    toast.error(mensaje, {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  }
 };
 
+// Funciones CRUD para reservas
 
 export const obtenerTodasReservas = async () => {
   try {
     const respuesta = await api.get("/");
-    console.log(respuesta.data);
     return respuesta.data;
   } catch (error) {
-    mostrarAlerta(
+    mostrarToast(
       "error",
       error.response?.data?.message || "Error al obtener reservas"
     );
-    throw error; // Re-lanzar el error para que pueda ser manejado por el llamador
+    throw error;
   }
 };
 
@@ -109,7 +110,7 @@ export const obtenerReservaPorId = async (id) => {
     const respuesta = await api.get(`/${id}`);
     return respuesta.data;
   } catch (error) {
-    mostrarAlerta(
+    mostrarToast(
       "error",
       error.response?.data?.message || "Error al obtener reserva"
     );
@@ -120,10 +121,10 @@ export const obtenerReservaPorId = async (id) => {
 export const crearReserva = async (reserva) => {
   try {
     const respuesta = await api.post("/create", reserva);
-    mostrarAlerta("success", "Reserva creada exitosamente");
+    mostrarToast("success", "Reserva creada exitosamente");
     return respuesta.data;
   } catch (error) {
-    mostrarAlerta(
+    mostrarToast(
       "error",
       error.response?.data?.message || "Error al crear reserva"
     );
@@ -134,10 +135,10 @@ export const crearReserva = async (reserva) => {
 export const actualizarReserva = async (id, datosReserva) => {
   try {
     const respuesta = await api.put(`/${id}`, datosReserva);
-    mostrarAlerta("success", "Reserva actualizada exitosamente");
+    mostrarToast("success", "Reserva actualizada exitosamente");
     return respuesta.data;
   } catch (error) {
-    mostrarAlerta(
+    mostrarToast(
       "error",
       error.response?.data?.message || "Error al actualizar reserva"
     );
@@ -148,10 +149,10 @@ export const actualizarReserva = async (id, datosReserva) => {
 export const eliminarReserva = async (id) => {
   try {
     const respuesta = await api.delete(`/${id}`);
-    mostrarAlerta("success", "Reserva eliminada exitosamente");
+    mostrarToast("success", "Reserva eliminada exitosamente");
     return respuesta.data;
   } catch (error) {
-    mostrarAlerta(
+    mostrarToast(
       "error",
       error.response?.data?.message || "Error al eliminar reserva"
     );
@@ -167,7 +168,7 @@ export const obtenerCalendario = async (medicoId, especialidadId) => {
     );
     return respuesta.data;
   } catch (error) {
-    mostrarAlerta(
+    mostrarToast(
       "error",
       error.response?.data?.message ||
         "Error al obtener la disponibilidad del médico"
@@ -175,78 +176,70 @@ export const obtenerCalendario = async (medicoId, especialidadId) => {
     throw error;
   }
 };
-// Nueva API: Obtener disponibilidad de un médico en función de su especialidad
+
+// Nueva API: Obtener los médicos de una especialidad
 export const obtenerMedicosdeEspecialidad = async (especialidadId) => {
   try {
-    // Realiza una solicitud GET al endpoint para obtener la disponibilidad del médico según la especialidad
     const respuesta = await api.get(`/medico/especialidad/${especialidadId}`);
-
-    // Retorna la data de la respuesta
-    console.log(respuesta.data);
     return respuesta.data;
   } catch (error) {
-    // Muestra una alerta en caso de error
-    mostrarAlerta(
+    mostrarToast(
       "error",
       error.response?.data?.message ||
-        "Error al obtener los medicos de la especialidad"
+        "Error al obtener los médicos de la especialidad"
     );
-    throw error; // Re-lanzar el error para manejo adicional si es necesario
+    throw error;
+  }
+};
+
+// Nueva API: Actualizar una consulta
+export const actualizarConsulta = async (idconsulta, consulta) => {
+  try {
+    const respuesta = await api.put(`/consulta/${idconsulta}`, consulta);
+    mostrarToast("success", "Consulta actualizada exitosamente");
+    return respuesta.data;
+  } catch (error) {
+    mostrarToast(
+      "error",
+      error.response?.data?.message || "Error al actualizar la consulta"
+    );
+    throw error;
   }
 };
 
 // Nueva API: Crear una consulta
-export const actualizarConsulta = async (idconsulta, consulta) => {
-  try {
-    // Realiza la solicitud PUT al endpoint de actualización de consulta
-    const respuesta = await api.put(`/consulta/${idconsulta}`, consulta);
-
-    // Muestra un mensaje de éxito si la consulta se actualiza correctamente
-    mostrarAlerta("success", "Consulta actualizada exitosamente");
-    return respuesta.data; // Devuelve la respuesta del servidor
-  } catch (error) {
-    // Manejo de errores y muestra de alerta en caso de fallo
-    mostrarAlerta(
-      "error",
-      error.response?.data?.message || "Error al actualizar la consulta"
-    );
-    throw error; // Re-lanzar el error para manejo adicional si es necesario
-  }
-};
-
 export const crearConsulta = async (consulta) => {
   try {
-    // Realiza la solicitud POST al endpoint de crear consulta
     const respuesta = await api.post("/consulta/create", consulta);
-    return respuesta.data; // Devuelve la respuesta del servidor
+    mostrarToast("success", "Consulta creada exitosamente");
+    return respuesta.data;
   } catch (error) {
-    // Manejo de errores y muestra de alerta en caso de fallo
-    mostrarAlerta(
+    mostrarToast(
       "error",
       error.response?.data?.message || "Error al crear la consulta"
     );
-    throw error; // Re-lanzar el error para manejo adicional si es necesario
+    throw error;
   }
 };
-// Nueva API: Confirmar la reserva del médico
-export const confirmarReservaMedico = async (reservaId, estadoConfirmacionMedico) => {
-  try {
-    console.log(estadoConfirmacionMedico);
-    // Realiza la solicitud PUT al endpoint de confirmación de reserva
-    const respuesta = await api.put(`/${reservaId}/confirmacion`, {
-      estadoConfirmacionMedico
-    });
 
-    // Muestra un mensaje de éxito si la confirmación se actualiza correctamente
-    mostrarAlerta("success", "Reserva confirmada exitosamente");
-    return respuesta.data; // Devuelve la respuesta del servidor
+// Nueva API: Confirmar la reserva del médico
+export const confirmarReservaMedico = async (
+  reservaId,
+  estadoConfirmacionMedico
+) => {
+  try {
+    const respuesta = await api.put(`/${reservaId}/confirmacion`, {
+      estadoConfirmacionMedico,
+    });
+    mostrarToast("success", "Reserva confirmada exitosamente");
+    return respuesta.data;
   } catch (error) {
-    // Manejo de errores y muestra de alerta en caso de fallo
-    mostrarAlerta(
+    mostrarToast(
       "error",
       error.response?.data?.message || "Error al confirmar la reserva"
     );
-    throw error; // Re-lanzar el error para manejo adicional si es necesario
+    throw error;
   }
 };
 
+export default api;

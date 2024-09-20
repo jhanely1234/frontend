@@ -95,6 +95,7 @@ export default function DoctorForm() {
     try {
       setIsLoading(true);
       const response = await obtenerTodasEspecialidades();
+      console.log("Response:", response);
       if (response.status === "success" && Array.isArray(response.especialidades)) {
         setEspecialidades(
           response.especialidades.map((especialidad) => ({
@@ -103,6 +104,7 @@ export default function DoctorForm() {
           }))
         );
       } else {
+        console.error("Error fetching especialidades:", response.message);
         throw new Error("Formato de respuesta inesperado");
       }
     } catch (error) {
@@ -226,7 +228,7 @@ export default function DoctorForm() {
       navigate("/medico");
     } catch (error) {
       console.error("Error saving medico:", error);
-      Swal.fire("Error", "No se pudo guardar la información del médico", "error");
+      Swal.fire("Error", error.response.data.message || "No se pudo guardar la información del médico", "error");
     } finally {
       setIsLoading(false);
     }

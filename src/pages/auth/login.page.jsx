@@ -252,6 +252,7 @@ const LoginPage = () => {
               {!isCodeSent && (
                 <div className="text-sm">
                   <button
+                    type="button"
                     onClick={handleForgotPassword}
                     className="font-medium text-teal-600 hover:text-teal-500 focus:outline-none focus:underline transition duration-150 ease-in-out"
                   >

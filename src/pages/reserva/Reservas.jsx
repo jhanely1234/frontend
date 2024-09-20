@@ -12,6 +12,8 @@ import useAuth from "../../hooks/auth.hook";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import Fuse from "fuse.js";
+import { PDFViewer } from '@react-pdf/renderer';
+import PrescriptionPDF from './RecetaPDF';
 
 export default function Reservas() {
   const [reservas, setReservas] = useState([]);
@@ -123,11 +125,16 @@ export default function Reservas() {
 
   const handleViewReceta = async (id) => {
     try {
-      const historial = await obtenerHistorialPorReservaId(id);
-      setConsultaDetalles(historial.consultas[0]);
-      setViewReceta(true);
+      const response = await obtenerHistorialPorReservaId(id);
+      if (response.response === "success" && response.consulta) {
+        setConsultaDetalles(response.consulta);
+        setViewReceta(true);
+      } else {
+        throw new Error("Formato de respuesta inválido");
+      }
     } catch (error) {
       console.error("Error fetching historial:", error);
+      setError("Error al cargar los detalles de la consulta. Por favor, intente de nuevo.");
     }
   };
 
@@ -181,27 +188,6 @@ export default function Reservas() {
     }
   };
 
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-    const element = document.getElementById("receta-content");
-
-    html2canvas(element).then((canvas) => {
-      const imgData = canvas.toDataURL("image/png");
-      doc.addImage(imgData, "PNG", 10, 10);
-      doc.save("receta.pdf");
-    });
-  };
-
-  const handleDownloadPNG = () => {
-    const element = document.getElementById("receta-content");
-
-    html2canvas(element).then((canvas) => {
-      const link = document.createElement("a");
-      link.download = "receta.png";
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    });
-  };
 
   if (authLoading || loading) {
     return (
@@ -545,103 +531,43 @@ export default function Reservas() {
         </div>
       )}
 
-      {viewReceta && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div
-            id="receta-content"
-            className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md"
-          >
-            <h2 className="text-2xl font-bold mb-4 text-blue-800">
-              Detalles de la Receta
-            </h2>
-            {consultaDetalles && (
-              <div className="space-y-3">
-                <p>
-                  <span className="font-semibold">Paciente:</span>{" "}
-                  {consultaDetalles.citaMedica.paciente.name}{" "}
-                  {consultaDetalles.citaMedica.paciente.lastname}
-                </p>
-                <p>
-                  <span className="font-semibold">Médico:</span>{" "}
-                  {consultaDetalles.citaMedica.medico.name}{" "}
-                  {consultaDetalles.citaMedica.medico.lastname}
-                </p>
-                <p>
-                  <span className="font-semibold">Fecha y hora:</span>{" "}
-                  {new Date(
-                    consultaDetalles.citaMedica.fechaReserva
-                  ).toLocaleDateString()}{" "}
-                  {consultaDetalles.citaMedica.horaInicio}
-                </p>
-                <p>
-                  <span className="font-semibold">Motivo:</span>{" "}
-                  {consultaDetalles.motivo_consulta}
-                </p>
-                <p>
-                  <span className="font-semibold">Diagnostico:</span>{" "}
-                  {consultaDetalles.diagnostico}
-                </p>
-                <p>
-                  <span className="font-semibold">Conducta:</span>{" "}
-                  {consultaDetalles.conducta}
-                </p>
-                <p>
-                  <span className="font-semibold">Especialidad:</span>{" "}
-                  {consultaDetalles.citaMedica.especialidad_solicitada.name}
-                </p>
-                <p>
-                  <span className="font-semibold">Receta:</span>{" "}
-                  {consultaDetalles.receta}
-                </p>
-              </div>
-            )}
-            <div className="mt-6 space-y-2">
-              <button
-                onClick={handleDownloadPDF}
-                className="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600 transition duration-300 ease-in-out w-full flex items-center justify-center"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Descargar PDF
-              </button>
-              <button
-                onClick={handleDownloadPNG}
-                className="bg-orange-500 text-white px-4 py-2 rounded-full hover:bg-orange-600 transition duration-300 ease-in-out w-full flex items-center justify-center"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Descargar PNG
-              </button>
-              <button
-                onClick={() => setViewReceta(false)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300 ease-in-out w-full"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+{viewReceta && consultaDetalles && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-4xl h-5/6">
+      <h2 className="text-2xl font-bold mb-4 text-blue-800">
+        Receta Médica
+      </h2>
+      <PDFViewer width="100%" height="100%">
+      <PrescriptionPDF
+        doctorName={`${consultaDetalles.medico.name} ${consultaDetalles.medico.lastname}`}
+        doctorCredentials={consultaDetalles.especialidad}
+        patientName={consultaDetalles.paciente.nombre}
+        patientAge={consultaDetalles.paciente.edad}
+        patientPhone={consultaDetalles.paciente.telefono.toString()}
+        date={new Date(consultaDetalles.fechaConsulta).toLocaleDateString()}
+        weight={consultaDetalles.signos_vitales[0]?.peso || "N/A"}
+        height={consultaDetalles.signos_vitales[0]?.talla || "N/A"}
+        fc={consultaDetalles.signos_vitales[0]?.Fc || "N/A"}
+        fr={consultaDetalles.signos_vitales[0]?.Fr || "N/A"}
+        temp={consultaDetalles.signos_vitales[0]?.Temperatura || "N/A"}
+        logoUrl="/public/logo_mediconsulta_original.png"
+        prescriptionText={consultaDetalles.receta}
+        diagnosis={consultaDetalles.diagnostico}
+        physicalExam={consultaDetalles.examen_fisico}
+        consultReason={consultaDetalles.motivo_consulta}
+      />
+      </PDFViewer>
+      <div className="mt-6 space-y-2">
+        <button
+          onClick={() => setViewReceta(false)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300 ease-in-out w-full"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

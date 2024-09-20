@@ -1,14 +1,15 @@
-import Swal from "sweetalert2"; // Importa SweetAlert
 import axios from "axios";
 import { toast } from "react-toastify"; // Importa Toastify para el error elegante
 
 // URL del servidor usando variable de entorno de Vite
-let serverPrimary = `${import.meta.env.VITE_URL_DOCKER}:3000/api/especialidad`;
+let serverPrimary = `${
+  import.meta.env.VITE_URL_MICROSERVICE_ESPECIALIDADES
+}/especialidad`;
 
 // Crear una instancia de Axios
 const api = axios.create({
   baseURL: serverPrimary,
-  timeout: 5000 // Timeout de las solicitudes a 5 segundos
+  timeout: 5000, // Timeout de las solicitudes a 5 segundos
 });
 
 // Función para verificar la disponibilidad del servidor, considerando el token
@@ -17,9 +18,9 @@ const checkServerAvailability = async (url) => {
   try {
     await axios.get(url, {
       headers: {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      timeout: 1000
+      timeout: 1000,
     });
     return true;
   } catch (error) {
@@ -40,7 +41,7 @@ const initializeServerConnection = async () => {
       hideProgressBar: true,
       closeOnClick: true,
       pauseOnHover: true,
-      draggable: true
+      draggable: true,
     });
   }
 };
@@ -67,6 +68,7 @@ api.interceptors.request.use(
 export const obtenerTodasEspecialidades = async () => {
   try {
     const respuesta = await api.get("/");
+    console.log("respuesta.data", respuesta.data);
     return respuesta.data;
   } catch (error) {
     console.error(

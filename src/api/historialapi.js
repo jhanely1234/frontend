@@ -1,22 +1,25 @@
 import axios from "axios";
+import { toast } from "react-toastify"; // Importa Toastify para el error elegante
 
-// URLs de los servidores usando variables de entorno de Vite
-let serverPrimary = `${import.meta.env.VITE_URL_DOCKER}:3000/api/historial`;
-let serverBackup = `${import.meta.env.VITE_URL_BACKUP}/api/historial`;
-let serverConsulta = `${import.meta.env.VITE_URL_BACKUP}/api/consulta`; // URL específica para crear consulta
+// URL del servidor usando variable de entorno de Vite
+let serverPrimary = `${
+  import.meta.env.VITE_URL_PRIMARY_HISTORIAL
+}/historial`;
+let serverConsulta = `${
+  import.meta.env.VITE_URL_PRIMARY_CONSULTA
+}/consulta`; // URL específica para crear consulta
 let currentServer = serverPrimary; // Servidor actual
-let useBackupServer = false; // Bandera para usar el servidor de respaldo
 
 // Crear una instancia de Axios para el historial
 const api = axios.create({
   baseURL: serverPrimary,
-  
+  timeout: 5000, // Timeout de las solicitudes a 5 segundos
 });
 
 // Crear una instancia de Axios específica para crear consulta
 const apiConsulta = axios.create({
   baseURL: serverConsulta,
-  
+  timeout: 5000, // Timeout de las solicitudes a 5 segundos
 });
 
 // Función para verificar la disponibilidad del servidor, considerando el token
@@ -27,7 +30,7 @@ const checkServerAvailability = async (url) => {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      timeout: 1000,
+      timeout: 1000, // Timeout corto para prueba rápida de disponibilidad
     });
     return true;
   } catch (error) {
@@ -35,30 +38,29 @@ const checkServerAvailability = async (url) => {
   }
 };
 
-// Función para inicializar la conexión al servidor
+// Función para inicializar la conexión al servidor de historial
 const initializeServerConnection = async () => {
   const isPrimaryAvailable = await checkServerAvailability(serverPrimary);
   if (isPrimaryAvailable) {
-    console.log("Conectado al servidor principal:", serverPrimary);
+    console.log("Conectado al servidor principal de historial:", serverPrimary);
     currentServer = serverPrimary;
   } else {
-    console.warn("Servidor principal no disponible. Intentando con el servidor de respaldo...");
-    const isBackupAvailable = await checkServerAvailability(serverBackup);
-    if (isBackupAvailable) {
-      console.log("Conexión exitosa con el servidor de respaldo:", serverBackup);
-      api.defaults.baseURL = serverBackup;
-      currentServer = serverBackup;
-      useBackupServer = true;
-    } else {
-      console.error("El servidor de respaldo tampoco está disponible");
-    }
+    console.error("El servidor principal de historial no está disponible.");
+    toast.error("El servidor de historial no está disponible.", {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
   }
 };
 
 // Inicializar la conexión al cargar el módulo
 initializeServerConnection();
 
-// Interceptor para añadir el token a cada solicitud en la instancia principal
+// Interceptor para añadir el token a cada solicitud en la instancia principal (historial)
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token"); // Obtener el token del localStorage
@@ -93,7 +95,18 @@ export const obtenerHistorialPorPaciente = async (pacienteId) => {
     const respuesta = await api.get(`/${pacienteId}`);
     return respuesta.data;
   } catch (error) {
-    console.error("Error al obtener el historial:", error.response?.data?.message || error.message);
+    console.error(
+      "Error al obtener el historial:",
+      error.response?.data?.message || error.message
+    );
+    toast.error("Error al obtener el historial.", {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
     return Promise.reject(error);
   }
 };
@@ -105,17 +118,40 @@ export const crearConsulta = async (consulta) => {
     console.log("Consulta creada con éxito:", response.data.message);
     return response.data;
   } catch (error) {
-    console.error("Error al crear la consulta:", error.response?.data?.message || error.message);
+    console.error(
+      "Error al crear la consulta:",
+      error.response?.data?.message || error.message
+    );
+    toast.error("Error al crear la consulta.", {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
     return Promise.reject(error);
   }
 };
 
+// Función para obtener historial por reserva ID
 export const obtenerHistorialPorReservaId = async (reservaId) => {
   try {
     const respuesta = await api.get(`/reserva/${reservaId}`);
     return respuesta.data;
   } catch (error) {
-    console.error("Error al obtener el historial por reserva ID:", error.response?.data?.message || error.message);
+    console.error(
+      "Error al obtener el historial por reserva ID:",
+      error.response?.data?.message || error.message
+    );
+    toast.error("Error al obtener el historial por reserva ID.", {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
     return Promise.reject(error);
   }
 };

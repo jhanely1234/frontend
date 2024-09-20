@@ -12,7 +12,7 @@ import {
   FaSignOutAlt,
   FaUser,
   FaBars,
-  FaTimes
+  FaTimes,
 } from "react-icons/fa";
 
 export default function Sidebar() {
@@ -23,7 +23,9 @@ export default function Sidebar() {
 
   const { auth = {}, setAuth, setIsLoading } = useAuth();
   const roles = auth.roles || [];
-
+  const handleNavigation = () => {
+    navigate("/");
+  };
   const isAdmin = roles.some((role) => role.name === "admin");
   const isPaciente = roles.some((role) => role.name === "paciente");
   const isMedico = roles.some((role) => role.name === "medico");
@@ -88,9 +90,11 @@ export default function Sidebar() {
           isOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0 lg:static lg:h-screen`}
       >
-        <div className="h-16 bg-gray-900 flex items-center justify-center">
-          <h1 className="text-xl font-bold">Medical Dashboard</h1>
-        </div>
+        <Link to="/">
+          <div className="h-16 bg-gray-900 flex items-center justify-center cursor-pointer">
+            <h1 className="text-xl font-bold">Medical Dashboard</h1>
+          </div>
+        </Link>
         <nav className="mt-5">
           <ul className="space-y-2 px-4">
             {(isAdmin || isRecepcionista) && (
@@ -262,15 +266,6 @@ export default function Sidebar() {
               <>
                 <li>
                   <Link
-                    to="/paciente/profile"
-                    className="flex items-center p-2 rounded hover:bg-gray-700"
-                  >
-                    <FaUser className="mr-2" />
-                    Mi Perfil
-                  </Link>
-                </li>
-                <li>
-                  <Link
                     to="/reservas"
                     className="flex items-center p-2 rounded hover:bg-gray-700"
                   >
@@ -283,15 +278,6 @@ export default function Sidebar() {
 
             {isMedico && (
               <>
-                <li>
-                  <Link
-                    to="/medico/profile"
-                    className="flex items-center p-2 rounded hover:bg-gray-700"
-                  >
-                    <FaUser className="mr-2" />
-                    Mi Perfil
-                  </Link>
-                </li>
                 <li>
                   <Link
                     to="/paciente"

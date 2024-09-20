@@ -3,19 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/auth.hook";
 import axiosClient from "../../services/axios.service";
 import {
-  FaSearch,
-  FaBell,
   FaUser,
-  FaBars,
   FaChevronDown,
   FaTimes,
   FaSpinner,
   FaEnvelope,
   FaIdCard,
   FaUserTag,
-  FaPencilAlt,
-  FaSave,
-  FaExclamationTriangle
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import logo from "../../assets/logo/logo_mediconsulta_original.png";
 
@@ -25,14 +20,12 @@ export default function TopHeader({ toggleSidebar }) {
   const [profileData, setProfileData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState({});
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const {
     auth: { _id },
     setAuth,
-    setIsLoading: setAuthLoading
+    setIsLoading: setAuthLoading,
   } = useAuth();
 
   const handleLogout = () => {
@@ -52,8 +45,6 @@ export default function TopHeader({ toggleSidebar }) {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setIsEditing(false);
-    setEditedData({});
   };
 
   const fetchProfileData = async () => {
@@ -70,62 +61,19 @@ export default function TopHeader({ toggleSidebar }) {
     const config = {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     };
 
     try {
       const { data } = await axiosClient.get("/auth/me", config);
       setProfileData(data);
-      setEditedData(data);
     } catch (error) {
       setError("Error al cargar los datos del perfil");
       console.error("Error fetching profile data:", error);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    setError(null);
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setError("No se encontró el token de autenticación");
-      setIsLoading(false);
-      return;
-    }
-
-    const config = {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      }
-    };
-
-    try {
-      const { data } = await axiosClient.put(
-        "/auth/update-profile",
-        editedData,
-        config
-      );
-      setProfileData(data);
-      setIsEditing(false);
-    } catch (error) {
-      setError("Error al actualizar los datos del perfil");
-      console.error("Error updating profile data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    setEditedData({ ...editedData, [e.target.name]: e.target.value });
   };
 
   useEffect(() => {
@@ -146,7 +94,6 @@ export default function TopHeader({ toggleSidebar }) {
       <header className="bg-white shadow-md py-4 px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-
             <img src={logo} alt="Logo" className="h-8 w-auto" />
           </div>
           <div className="flex items-center space-x-4">
@@ -228,17 +175,7 @@ export default function TopHeader({ toggleSidebar }) {
                     <FaUser className="h-12 w-12 text-gray-500" />
                     <div>
                       <h3 className="text-lg font-semibold text-gray-800">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            name="name"
-                            value={editedData.name}
-                            onChange={handleInputChange}
-                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          />
-                        ) : (
-                          profileData.name
-                        )}
+                        {profileData.name}
                       </h3>
                       <p className="text-gray-600">
                         {profileData.roles.map((role) => role.name).join(", ")}
@@ -249,17 +186,7 @@ export default function TopHeader({ toggleSidebar }) {
                     <div className="flex items-center space-x-2">
                       <FaEnvelope className="text-gray-500" />
                       <span className="font-medium">Email:</span>
-                      {isEditing ? (
-                        <input
-                          type="email"
-                          name="email"
-                          value={editedData.email}
-                          onChange={handleInputChange}
-                          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
-                      ) : (
-                        <span>{profileData.email}</span>
-                      )}
+                      <span>{profileData.email}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <FaIdCard className="text-gray-500" />
@@ -273,36 +200,6 @@ export default function TopHeader({ toggleSidebar }) {
                         {profileData.roles.map((role) => role.name).join(", ")}
                       </span>
                     </div>
-                  </div>
-                  <div className="flex justify-end space-x-2 mt-6">
-                    {isEditing ? (
-                      <>
-                        <button
-                          onClick={handleSave}
-                          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition duration-150 ease-in-out flex items-center"
-                        >
-                          <FaSave className="mr-2" />
-                          Guardar
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsEditing(false);
-                            setEditedData(profileData);
-                          }}
-                          className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition duration-150 ease-in-out"
-                        >
-                          Cancelar
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={handleEdit}
-                        className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition duration-150 ease-in-out flex items-center"
-                      >
-                        <FaPencilAlt className="mr-2" />
-                        Editar
-                      </button>
-                    )}
                   </div>
                 </>
               ) : (

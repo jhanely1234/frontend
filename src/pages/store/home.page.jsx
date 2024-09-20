@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import useAuth from "../../hooks/auth.hook";
 
 import DashboardPage from "../admin/dashboard.page";
+import UpdatedHospitalWelcome from "./dashboardall";
 
 const HomePage = () => {
   const {
@@ -21,10 +22,7 @@ const HomePage = () => {
   ) : (
     <div className="block space-y-4 text-2xl">
       <div className="text-left">
-        <span>Bienvenido:{name} {lastname}</span>
-      </div>
-      <div className="text-left">
-      <span className="font-bold">{email}</span>
+        <span>Bienvenido : {name} {lastname}</span>
       </div>
      
       <div>
@@ -32,20 +30,15 @@ const HomePage = () => {
             <DashboardPage />
         )}
         {isMedico && (
-          <Link to="/medico" className="text-center block">
-            Dashboard MEDICO
-          </Link>
+          <UpdatedHospitalWelcome />
         )}
         {isPaciente && (
-          <Link to="/paciente" className="text-center block">
-            Dashboard PACIENTE
-          </Link>
+            <UpdatedHospitalWelcome />
         )}
         {isRecepcionista && (
-          <Link to="/recepcionista" className="text-center block">
-            Dashboard RECEPCIONISTA
-          </Link>
+            <DashboardPage />
         )}
+        
       </div>
     </div>
   );

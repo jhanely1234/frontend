@@ -8,38 +8,40 @@ const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
+    const authenticateUser = async () => {
       const token = localStorage.getItem("token");
 
       if (!token) {
+        setIsLoading(false); // No hay token, ya podemos detener el loading
         return;
       }
 
       const config = {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       };
 
       try {
         const { data } = await axiosClient.get("/auth/me", config);
-        setAuth(data);
+        setAuth(data); // Establecer los datos del usuario autenticado
       } catch (error) {
-        setAuth({});
+        setAuth({}); // Limpiar la autenticación en caso de error
       } finally {
-        setIsLoading(false);
+        setIsLoading(false); // Termina de cargar
       }
-    })();
+    };
+
+    authenticateUser();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ auth, setAuth, isLoading, setIsLoading }}>
+    <AuthContext.Provider value={{ auth, setAuth, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export { AuthProvider };
-
 export default AuthContext;
