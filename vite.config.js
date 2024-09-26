@@ -39,7 +39,7 @@ export default defineConfig({
       },
       // Esta es la clave para que funcione en desarrollo
       devOptions: {
-        enabled: true, // Activa el PWA en modo desarrollo
+        enabled: false, // Activa el PWA en modo desarrollo
         type: "module", // Usa el tipo de módulo para SW en modo dev
         navigateFallback: "index.html",
       },

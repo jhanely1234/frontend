@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { crearConsulta, actualizarConsulta } from "../../api/reservaapi";
-import { obtenerReservaPorId } from "../../api/reservaapi";
+import { crearConsulta, actualizarConsulta, crearReserva, obtenerCalendario, obtenerReservaPorId } from "../../api/reservaapi";
 import {
   FaHeartbeat,
   FaLungs,
@@ -13,6 +12,12 @@ import {
   FaExclamationTriangle,
   FaInfoCircle
 } from "react-icons/fa";
+import { DatePicker, Select, Modal, Button, message } from "antd";
+import moment from "moment";
+import "moment/locale/es";
+import locale from 'antd/es/date-picker/locale/es_ES';
+
+const { Option } = Select;
 
 const CrearConsulta = () => {
   const { id } = useParams();
@@ -35,24 +40,29 @@ const CrearConsulta = () => {
   const [timeLeft, setTimeLeft] = useState(null);
   const [error, setError] = useState(null);
   const [suggestions, setSuggestions] = useState({});
-  const [horainicio,sethoraInicio] = useState("");
+  const [horainicio, sethoraInicio] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [showModalReconsulta, setShowModalReconsulta] = useState(false);
+  const [reconsulta, setReconsulta] = useState(false);
+  const [fechaReconsulta, setFechaReconsulta] = useState("");
+  const [horaReconsulta, setHoraReconsulta] = useState("");
+  const [calendario, setCalendario] = useState([]);
+  const [horasDisponibles, setHorasDisponibles] = useState([]);
 
   useEffect(() => {
     const fetchReservaAndCreateConsulta = async () => {
       setIsLoading(true);
       try {
         const response = await obtenerReservaPorId(id);
-        if (response.response === "success" ) {
+        if (response.response === "success") {
           setReserva(response.cita);
           const endTime = new Date(`${response.cita.fechaReserva.split('T')[0]}T${response.cita.horaFin}:00`);
           setTimeLeft(endTime - new Date());
 
-          // Create initial consultation
           const nuevaConsulta = await crearConsulta({ citaMedica: id });
           if (nuevaConsulta.response === "success" && nuevaConsulta.consulta) {
             setConsultaId(nuevaConsulta.consulta._id);
-            sethoraInicio(nuevaConsulta.consulta.horaInicio)
-
+            sethoraInicio(nuevaConsulta.consulta.horaInicio);
           } else {
             throw new Error("Error al crear la consulta inicial");
           }
@@ -151,16 +161,79 @@ const CrearConsulta = () => {
 
       const response = await actualizarConsulta(consultaId, consultaActualizada);
       if (response.response === "success") {
-        navigate("/reservas");
+        setShowModal(true);
       } else {
         throw new Error("Error al actualizar la consulta");
       }
     } catch (error) {
       console.error("Error al actualizar la consulta:", error);
       setError("Error al actualizar la consulta. Por favor, intente de nuevo.");
-      mostrarAlerta("error", "Error al actualizar la consulta");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCalendario = async () => {
+    if (reserva) {
+      try {
+        const response = await obtenerCalendario(reserva.medico._id, reserva.especialidad_solicitada._id);
+        if (response.response === "success") {
+          setCalendario(response.calendario);
+        } else {
+          message.error("Error al obtener la disponibilidad del médico");
+        }
+      } catch (error) {
+        console.error("Error fetching calendar:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (showModalReconsulta && reserva) {
+      fetchCalendario();
+    }
+  }, [showModalReconsulta, reserva]);
+
+  const handleDateChange = (date) => {
+    const selectedDate = date.format("YYYY-MM-DD");
+    const disponibilidadesDia = calendario.find((dia) => dia.fecha === selectedDate);
+
+    if (disponibilidadesDia) {
+      const intervalosLibres = disponibilidadesDia.intervalos.filter(
+        (intervalo) => intervalo.estado === "LIBRE"
+      );
+      setHorasDisponibles(intervalosLibres);
+      setFechaReconsulta(selectedDate);
+      setHoraReconsulta(""); // Resetear la hora cuando se selecciona una nueva fecha
+    } else {
+      setHorasDisponibles([]);
+      message.warning("No hay disponibilidad para la fecha seleccionada");
+    }
+  };
+
+  const handleHourChange = (hora) => {
+    setHoraReconsulta(hora);
+  };
+
+  const handleCrearReconsulta = async () => {
+    try {
+      const nuevaReserva = {
+        pacienteId: reserva.paciente._id,
+        medicoId: reserva.medico._id,
+        especialidadId: reserva.especialidad_solicitada._id,
+        fechaReserva: fechaReconsulta,
+        horaInicio: horaReconsulta,
+      };
+
+      const nuevaConsulta = await crearReserva(nuevaReserva);
+      if (nuevaConsulta.response === "success") {
+        navigate("/reservas");
+      } else {
+        throw new Error("Error al crear la reconsulta");
+      }
+    } catch (error) {
+      console.error("Error al crear la reconsulta:", error);
+      setError("Error al crear la reconsulta. Por favor, intente de nuevo.");
     }
   };
 
@@ -304,11 +377,113 @@ const CrearConsulta = () => {
             {isLoading ? (
               <FaSpinner className="animate-spin mx-auto h-6 w-6" />
             ) : (
-              "Actualizar Consulta"
+              "Finalizar Consulta"
             )}
           </button>
         </div>
       </form>
+
+      {/* Modal para la pregunta de reconsulta */}
+      {showModal && (
+        <Modal
+          visible={showModal}
+          title="¿Desea realizar una reconsulta?"
+          onCancel={() => setShowModal(false)}
+          footer={[
+            <Button
+              key="no"
+              type="default"
+              onClick={() => navigate("/reservas")}
+            >
+              No
+            </Button>,
+            <Button
+              key="yes"
+              type="primary"
+              onClick={() => setShowModalReconsulta(true)}
+            >
+              Sí
+            </Button>,
+          ]}
+        >
+          <p>¿Desea realizar una reconsulta?</p>
+        </Modal>
+      )}
+
+      {/* Modal para la reconsulta */}
+      {showModalReconsulta && (
+        <Modal
+          visible={showModalReconsulta}
+          title="Reconsulta"
+          onCancel={() => setShowModalReconsulta(false)}
+          onOk={handleCrearReconsulta}
+          okText="Confirmar"
+          cancelText="Cancelar"
+        >
+          <div className="mb-4">
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                className="form-checkbox"
+                checked={reconsulta}
+                onChange={(e) => setReconsulta(e.target.checked)}
+              />
+              <span className="ml-2">Sí, deseo una reconsulta</span>
+            </label>
+          </div>
+
+          {reconsulta && (
+            <>
+              <h2 className="text-xl font-bold mb-4">Seleccione fecha y hora para la reconsulta:</h2>
+              <div className="mb-4">
+                <DatePicker
+                  onChange={handleDateChange}
+                  disabledDate={(current) => {
+                    const today = moment().startOf("day");
+                    return current && current < today;
+                  }}
+                  dateRender={(current) => {
+                    const dateString = current.format("YYYY-MM-DD");
+                    const disponibilidadesDia = calendario.find(
+                      (dia) => dia.fecha === dateString
+                    );
+
+                    const tieneDisponibilidad = disponibilidadesDia?.intervalos.some(
+                      (intervalo) => intervalo.estado === "LIBRE"
+                    );
+
+                    return (
+                      <div
+                        className={`ant-picker-cell-inner ${tieneDisponibilidad ? "bg-green-500" : "bg-red-500"
+                          } text-white`}
+                      >
+                        {current.date()}
+                      </div>
+                    );
+                  }}
+                  locale={locale}
+                />
+              </div>
+              {horasDisponibles.length > 0 && (
+                <div>
+                  <Select
+                    value={horaReconsulta}
+                    onChange={handleHourChange}
+                    placeholder="Seleccione una hora"
+                    className="w-full"
+                  >
+                    {horasDisponibles.map((intervalo) => (
+                      <Option key={intervalo.inicio} value={intervalo.inicio}>
+                        {intervalo.inicio}
+                      </Option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+            </>
+          )}
+        </Modal>
+      )}
     </div>
   );
 };

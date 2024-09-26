@@ -2,12 +2,10 @@ import axios from "axios";
 import { toast } from "react-toastify"; // Importa Toastify para el error elegante
 
 // URL del servidor usando variable de entorno de Vite
-let serverPrimary = `${
-  import.meta.env.VITE_URL_PRIMARY_HISTORIAL
-}/historial`;
-let serverConsulta = `${
-  import.meta.env.VITE_URL_PRIMARY_CONSULTA
-}/consulta`; // URL específica para crear consulta
+let serverPrimary = `${import.meta.env.VITE_URL_PRIMARY_HISTORIAL
+  }/historial`;
+let serverConsulta = `${import.meta.env.VITE_URL_PRIMARY_CONSULTA
+  }/consulta`; // URL específica para crear consulta
 let currentServer = serverPrimary; // Servidor actual
 
 // Crear una instancia de Axios para el historial
@@ -42,11 +40,11 @@ const checkServerAvailability = async (url) => {
 const initializeServerConnection = async () => {
   const isPrimaryAvailable = await checkServerAvailability(serverPrimary);
   if (isPrimaryAvailable) {
-    console.log("Conectado al servidor principal de historial:", serverPrimary);
+    console.log("Conectado al microservicio de historial:", serverPrimary);
     currentServer = serverPrimary;
   } else {
-    console.error("El servidor principal de historial no está disponible.");
-    toast.error("El servidor de historial no está disponible.", {
+    console.error("El microservicio de historial no está disponible");
+    toast.error("El microservicio de historial no está disponible.", {
       position: "bottom-right",
       autoClose: 5000,
       hideProgressBar: true,

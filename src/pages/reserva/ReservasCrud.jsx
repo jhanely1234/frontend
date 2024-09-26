@@ -1,14 +1,13 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import moment from "moment";
 import "moment/locale/es";
 import {
-  Modal,
   Button,
   Select,
-  Form,
+
   message,
   Spin,
   Steps,
@@ -22,7 +21,6 @@ import {
   crearReserva,
   actualizarReserva,
   obtenerReservaPorId,
-  obtenerTodasReservas,
   obtenerCalendario
 } from "../../api/reservaapi";
 import { obtenerTodasEspecialidades } from "../../api/especialidadesapi";
@@ -44,7 +42,6 @@ export default function ReservasCrud() {
 
   const isPaciente = roles.some(role => role.name === "paciente");
   const isMedico = roles.some(role => role.name === "medico");
-  const isAdminOrRecepcionista = roles.some(role => role.name === "admin" || role.name === "recepcionista");
 
   const [reserva, setReserva] = useState({
     pacienteId: isPaciente ? _id : "",
@@ -215,7 +212,7 @@ export default function ReservasCrud() {
       navigate("/reservas");
     } catch (error) {
       console.error("Error al guardar la reserva:", error);
-      message.error(error.response.data.message ||"Error al guardar la reserva");
+      message.error(error.response.data.message || "Error al guardar la reserva");
     } finally {
       setLoading(false);
     }
@@ -634,6 +631,6 @@ export default function ReservasCrud() {
           </form>
         </div>
       </Spin>
-    </div>
+    </div >
   );
 }

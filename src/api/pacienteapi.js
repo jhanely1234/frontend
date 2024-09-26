@@ -31,12 +31,12 @@ const checkServerAvailability = async (url) => {
 const initializeServerConnection = async () => {
   const isPrimaryAvailable = await checkServerAvailability(serverPrimary);
   if (isPrimaryAvailable) {
-    console.log("Conectado al servidor principal:", serverPrimary);
+    console.log("Conectado al microservicio de pacientes", serverPrimary);
     currentServer = serverPrimary;
   } else {
-    console.error("El servidor principal no está disponible.");
+    console.error("El microservicio de pacientes no está disponible.");
     toast.error(
-      "El servidor no está disponible. Por favor, intente de nuevo más tarde.",
+      "El microservicio de pacientes no está disponible.",
       {
         position: "bottom-right",
         autoClose: 5000,

@@ -5,15 +5,21 @@ import {
   actualizarReserva,
   eliminarReserva,
   confirmarReservaMedico,
+  crearReserva,
+  obtenerCalendario,
+  calificarConsulta, // Importar la función para calificar
 } from "../../api/reservaapi";
 import { obtenerHistorialPorReservaId } from "../../api/historialapi";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/auth.hook";
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
+import { Modal, DatePicker, Select, Rate } from "antd"; // Usar Ant Design para las estrellas de calificación
 import Fuse from "fuse.js";
-import { PDFViewer } from '@react-pdf/renderer';
-import PrescriptionPDF from './RecetaPDF';
+import moment from "moment";
+import locale from "antd/es/date-picker/locale/es_ES";
+import { PDFViewer } from "@react-pdf/renderer";
+import PrescriptionPDF from "./RecetaPDF";
+
+const { Option } = Select;
 
 export default function Reservas() {
   const [reservas, setReservas] = useState([]);
@@ -24,6 +30,16 @@ export default function Reservas() {
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showReprogramModal, setShowReprogramModal] = useState(false);
+  const [motivoCancelacion, setMotivoCancelacion] = useState("");
+  const [nuevaFechaReserva, setNuevaFechaReserva] = useState(null);
+  const [nuevaHoraInicio, setNuevaHoraInicio] = useState(null);
+  const [horasDisponibles, setHorasDisponibles] = useState([]);
+  const [calendario, setCalendario] = useState([]);
+  const [reservaAReprogramar, setReservaAReprogramar] = useState(null);
+  const [calificacion, setCalificacion] = useState(null); // Estado para almacenar la calificación
+  const [showCalificarModal, setShowCalificarModal] = useState(false);
+  const [consultaId, setConsultaId] = useState(null); // Estado para almacenar el ID de la consulta
   const navigate = useNavigate();
   const {
     auth: { roles, _id },
@@ -98,11 +114,11 @@ export default function Reservas() {
 
     return Array.isArray(result)
       ? result.filter(
-          (reserva) =>
-            (!filters.fechaReserva ||
-              reserva.fechaReserva.split("T")[0] === filters.fechaReserva) &&
-            (!filters.estado || reserva.estado_reserva === filters.estado)
-        )
+        (reserva) =>
+          (!filters.fechaReserva ||
+            reserva.fechaReserva.split("T")[0] === filters.fechaReserva) &&
+          (!filters.estado || reserva.estado_reserva === filters.estado)
+      )
       : [];
   }, [reservas, filters, fuse]);
 
@@ -134,7 +150,9 @@ export default function Reservas() {
       }
     } catch (error) {
       console.error("Error fetching historial:", error);
-      setError("Error al cargar los detalles de la consulta. Por favor, intente de nuevo.");
+      setError(
+        "Error al cargar los detalles de la consulta. Por favor, intente de nuevo."
+      );
     }
   };
 
@@ -166,28 +184,99 @@ export default function Reservas() {
     navigate(`/medico/consultas/crear/${id}`);
   };
 
-  const handleconfirmarReservaMedico = async (
-    reservaId,
-    estadoConfirmacionMedico
-  ) => {
-    console.log("Reserva a confirmar:", reservaId, estadoConfirmacionMedico);
+  const handleconfirmarReservaMedico = async (reservaId, estadoConfirmacionMedico) => {
     try {
-      const response = await confirmarReservaMedico(reservaId,
-        estadoConfirmacionMedico,
+      const response = await confirmarReservaMedico(
+        reservaId,
+        estadoConfirmacionMedico
       );
       if (response.response === "success") {
-        alert(response.message);
         await fetchReservas();
+        if (estadoConfirmacionMedico === "cancelado") {
+          setShowReprogramModal(true);
+          setReservaAReprogramar(
+            reservas.find((reserva) => reserva._id === reservaId)
+          );
+        }
       } else {
         throw new Error(response.message || "Error al procesar la reserva");
       }
-      console.log("Reserva confirmada correctamente:", response);
     } catch (error) {
       console.error("Error al confirmar o cancelar la reserva:", error);
       alert(error.message || "Error al procesar la reserva");
     }
   };
 
+  const handleDateChange = async (date) => {
+    const selectedDate = date.format("YYYY-MM-DD");
+    setNuevaFechaReserva(selectedDate);
+
+    try {
+      const response = await obtenerCalendario(
+        reservaAReprogramar.medico._id,
+        reservaAReprogramar.especialidad_solicitada._id
+      );
+      const disponibilidadesDia = response.calendario.find(
+        (dia) => dia.fecha === selectedDate
+      );
+      if (disponibilidadesDia) {
+        const intervalosLibres = disponibilidadesDia.intervalos.filter(
+          (intervalo) => intervalo.estado === "LIBRE"
+        );
+        setHorasDisponibles(intervalosLibres);
+      } else {
+        setHorasDisponibles([]);
+      }
+    } catch (error) {
+      console.error("Error fetching calendar:", error);
+    }
+  };
+
+  const handleReprogramarReserva = async () => {
+    if (!motivoCancelacion || !nuevaFechaReserva || !nuevaHoraInicio) {
+      alert("Por favor, complete todos los campos.");
+      return;
+    }
+
+    try {
+      const nuevaReserva = {
+        pacienteId: reservaAReprogramar.paciente._id,
+        medicoId: reservaAReprogramar.medico._id,
+        especialidadId: reservaAReprogramar.especialidad_solicitada._id,
+        fechaReserva: nuevaFechaReserva,
+        horaInicio: nuevaHoraInicio,
+        motivoCancelacion,
+      };
+
+      await crearReserva(nuevaReserva);
+      setShowReprogramModal(false);
+      await fetchReservas();
+      alert("La cita ha sido reprogramada con éxito.");
+    } catch (error) {
+      console.error("Error al reprogramar la reserva:", error);
+      alert("Error al reprogramar la reserva.");
+    }
+  };
+
+  const handleOpenCalificarModal = (consultaId) => {
+    setConsultaId(consultaId);
+    setShowCalificarModal(true);
+  };
+
+  const handleCalificar = async () => {
+    if (!calificacion || calificacion < 1 || calificacion > 5) {
+      alert("Por favor, selecciona una calificación entre 1 y 5");
+      return;
+    }
+
+    try {
+      await calificarConsulta(consultaId, calificacion);
+      setShowCalificarModal(false); // Cerrar el modal después de calificar
+      await fetchReservas(); // Actualizar las reservas
+    } catch (error) {
+      console.error("Error al calificar:", error);
+    }
+  };
 
   if (authLoading || loading) {
     return (
@@ -223,6 +312,8 @@ export default function Reservas() {
       <h1 className="text-3xl font-bold mb-6 text-blue-800">
         Lista de Reservas
       </h1>
+
+      {/* Filtros de búsqueda */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         {canAddReserva && (
           <Link
@@ -266,6 +357,7 @@ export default function Reservas() {
 
       {showFilters && (
         <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Inputs de filtro */}
           <input
             type="text"
             placeholder="Buscar por paciente o médico"
@@ -325,13 +417,12 @@ export default function Reservas() {
                 </p>
               </div>
               <span
-                className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                  reserva.estado_reserva === "atendido"
-                    ? "bg-green-100 text-green-800"
-                    : reserva.estado_reserva === "cancelado"
+                className={`px-2 py-1 text-xs font-semibold rounded-full ${reserva.estado_reserva === "atendido"
+                  ? "bg-green-100 text-green-800"
+                  : reserva.estado_reserva === "cancelado"
                     ? "bg-red-100 text-red-800"
                     : "bg-yellow-100 text-yellow-800"
-                }`}
+                  }`}
               >
                 {reserva.estado_reserva}
               </span>
@@ -340,9 +431,29 @@ export default function Reservas() {
               {reserva.especialidad_solicitada.name}
             </p>
             <p className="text-sm text-gray-700 mb-2">
-              {new Date(reserva.fechaReserva).toLocaleDateString()} -{" "}
-              {reserva.horaInicio}
+              {new Date(reserva.fechaReserva)
+                .toISOString()
+                .split("T")[0]
+                .split("-")
+                .reverse()
+                .join("/")}{" "}
+              - {reserva.horaInicio}
             </p>
+
+            {/* Mostrar opción de calificar solo si existe consulta y su calificación es 0 */}
+            {roles.some((role) => role.name === "paciente") &&
+              reserva.estado_reserva === "atendido" &&
+              reserva.consulta &&
+              reserva.consulta.calificacion === 0 && (
+                <div className="mt-2">
+                  <button
+                    onClick={() => handleOpenCalificarModal(reserva.consulta._id)}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 transition duration-300 ease-in-out w-full"
+                  >
+                    Calificar Consulta
+                  </button>
+                </div>
+              )}
 
             <div className="flex justify-end space-x-2 mt-2">
               <button
@@ -388,39 +499,39 @@ export default function Reservas() {
                     (role) =>
                       role.name === "admin" || role.name === "recepcionista"
                   ) && (
-                    <>
-                      <button
-                        onClick={() => handleEditProfile(reserva._id)}
-                        className="text-green-600 hover:text-green-800 transition duration-300"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
+                      <>
+                        <button
+                          onClick={() => handleEditProfile(reserva._id)}
+                          className="text-green-600 hover:text-green-800 transition duration-300"
                         >
-                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteReserva(reserva._id)}
-                        className="text-red-600 hover:text-red-800 transition duration-300"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteReserva(reserva._id)}
+                          className="text-red-600 hover:text-red-800 transition duration-300"
                         >
-                          <path
-                            fillRule="evenodd"
-                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                    </>
-                  )}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                      </>
+                    )}
                   {roles.some((role) => role.name === "medico") && (
                     <>
                       {reserva.estadoConfirmacionMedico === "pendiente" && (
@@ -444,17 +555,19 @@ export default function Reservas() {
                           Atender
                         </button>
                       )}
-                      <button
-                        onClick={() =>
-                          handleconfirmarReservaMedico(
-                            reserva._id,
-                            "cancelado"
-                          )
-                        }
-                        className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition duration-300"
-                      >
-                        Cancelar
-                      </button>
+                      {reserva.estado_reserva !== "cancelado" && (
+                        <button
+                          onClick={() =>
+                            handleconfirmarReservaMedico(
+                              reserva._id,
+                              "cancelado"
+                            )
+                          }
+                          className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition duration-300"
+                        >
+                          Cancelar
+                        </button>
+                      )}
                     </>
                   )}
                 </>
@@ -463,6 +576,22 @@ export default function Reservas() {
           </div>
         ))}
       </div>
+
+      {/* Modal de Calificación */}
+      <Modal
+        title="Calificar Consulta"
+        visible={showCalificarModal}
+        onCancel={() => setShowCalificarModal(false)}
+        onOk={handleCalificar}
+      >
+        <p>Selecciona una calificación (1 a 5 estrellas):</p>
+        <Rate
+          value={calificacion}
+          onChange={(value) => setCalificacion(value)}
+          allowClear={false}
+          count={5}
+        />
+      </Modal>
 
       {viewProfile && selectedReserva && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
@@ -486,7 +615,12 @@ export default function Reservas() {
               </p>
               <p>
                 <span className="font-semibold">Fecha de la Reserva:</span>{" "}
-                {new Date(selectedReserva.fechaReserva).toLocaleDateString()}
+                {new Date(selectedReserva.fechaReserva)
+                  .toISOString()
+                  .split("T")[0]
+                  .split("-")
+                  .reverse()
+                  .join("/")}
               </p>
               <p>
                 <span className="font-semibold">Hora Inicio:</span>{" "}
@@ -509,10 +643,6 @@ export default function Reservas() {
                 {selectedReserva.estadoConfirmacionMedico}
               </p>
               <p>
-                <span className="font-semibold">Urgencia:</span>{" "}
-                {selectedReserva.urgencia ? "Sí" : "No"}
-              </p>
-              <p>
                 <span className="font-semibold">Fecha de Creación:</span>{" "}
                 {new Date(selectedReserva.createdAt).toLocaleString()}
               </p>
@@ -531,43 +661,115 @@ export default function Reservas() {
         </div>
       )}
 
-{viewReceta && consultaDetalles && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-    <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-4xl h-5/6">
-      <h2 className="text-2xl font-bold mb-4 text-blue-800">
-        Receta Médica
-      </h2>
-      <PDFViewer width="100%" height="100%">
-      <PrescriptionPDF
-        doctorName={`${consultaDetalles.medico.name} ${consultaDetalles.medico.lastname}`}
-        doctorCredentials={consultaDetalles.especialidad}
-        patientName={consultaDetalles.paciente.nombre}
-        patientAge={consultaDetalles.paciente.edad}
-        patientPhone={consultaDetalles.paciente.telefono.toString()}
-        date={new Date(consultaDetalles.fechaConsulta).toLocaleDateString()}
-        weight={consultaDetalles.signos_vitales[0]?.peso || "N/A"}
-        height={consultaDetalles.signos_vitales[0]?.talla || "N/A"}
-        fc={consultaDetalles.signos_vitales[0]?.Fc || "N/A"}
-        fr={consultaDetalles.signos_vitales[0]?.Fr || "N/A"}
-        temp={consultaDetalles.signos_vitales[0]?.Temperatura || "N/A"}
-        logoUrl="/public/logo_mediconsulta_original.png"
-        prescriptionText={consultaDetalles.receta}
-        diagnosis={consultaDetalles.diagnostico}
-        physicalExam={consultaDetalles.examen_fisico}
-        consultReason={consultaDetalles.motivo_consulta}
-      />
-      </PDFViewer>
-      <div className="mt-6 space-y-2">
-        <button
-          onClick={() => setViewReceta(false)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300 ease-in-out w-full"
+      {viewReceta && consultaDetalles && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-4xl h-5/6">
+            <h2 className="text-2xl font-bold mb-4 text-blue-800">
+              Receta Médica
+            </h2>
+            <PDFViewer width="100%" height="100%">
+              <PrescriptionPDF
+                doctorName={`${consultaDetalles.medico.name} ${consultaDetalles.medico.lastname}`}
+                doctorCredentials={consultaDetalles.especialidad}
+                patientName={consultaDetalles.paciente.nombre}
+                patientAge={consultaDetalles.paciente.edad}
+                patientPhone={consultaDetalles.paciente.telefono.toString()}
+                date={new Date(
+                  consultaDetalles.fechaConsulta
+                ).toLocaleDateString()}
+                weight={consultaDetalles.signos_vitales[0]?.peso || "N/A"}
+                height={consultaDetalles.signos_vitales[0]?.talla || "N/A"}
+                fc={consultaDetalles.signos_vitales[0]?.Fc || "N/A"}
+                fr={consultaDetalles.signos_vitales[0]?.Fr || "N/A"}
+                temp={consultaDetalles.signos_vitales[0]?.Temperatura || "N/A"}
+                logoUrl="/public/logo_mediconsulta_original.png"
+                prescriptionText={consultaDetalles.receta}
+                diagnosis={consultaDetalles.diagnostico}
+                physicalExam={consultaDetalles.examen_fisico}
+                consultReason={consultaDetalles.motivo_consulta}
+              />
+            </PDFViewer>
+            <div className="mt-6 space-y-2">
+              <button
+                onClick={() => setViewReceta(false)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300 ease-in-out w-full"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReprogramModal && (
+        <Modal
+          visible={showReprogramModal}
+          title="Reprogramar Reserva"
+          onCancel={() => setShowReprogramModal(false)}
+          onOk={handleReprogramarReserva}
         >
-          Cerrar
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+          <div className="mb-4">
+            <label className="block text-sm font-semibold mb-2">
+              Motivo de Cancelación:
+            </label>
+            <input
+              type="text"
+              value={motivoCancelacion}
+              onChange={(e) => setMotivoCancelacion(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ingrese el motivo"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-semibold mb-2">
+              Seleccione Nueva Fecha:
+            </label>
+            <DatePicker
+              onChange={handleDateChange}
+              disabledDate={(current) => {
+                const today = moment().startOf("day");
+                return current && current < today;
+              }}
+              locale={locale}
+              dateRender={(current) => {
+                const isAvailable = calendario.some(
+                  (dia) => dia.fecha === current.format("YYYY-MM-DD")
+                );
+                const isUnavailable = !isAvailable;
+                const style = {
+                  border: `1px solid ${isUnavailable ? "red" : "green"}`,
+                  borderRadius: "50%",
+                };
+                return (
+                  <div className="ant-picker-cell-inner" style={style}>
+                    {current.date()}
+                  </div>
+                );
+              }}
+              className="w-full"
+            />
+          </div>
+          {horasDisponibles.length > 0 && (
+            <div className="mb-4">
+              <label className="block text-sm font-semibold mb-2">
+                Seleccione Nueva Hora:
+              </label>
+              <Select
+                value={nuevaHoraInicio}
+                onChange={(value) => setNuevaHoraInicio(value)}
+                placeholder="Seleccione una hora"
+                className="w-full"
+              >
+                {horasDisponibles.map((intervalo) => (
+                  <Option key={intervalo.inicio} value={intervalo.inicio}>
+                    {intervalo.inicio}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }

@@ -29,12 +29,12 @@ const checkServerAvailability = async (url) => {
 const initializeServerConnection = async () => {
   const isPrimaryAvailable = await checkServerAvailability(serverPrimary);
   if (isPrimaryAvailable) {
-    console.log("Conectado al servidor principal:", serverPrimary);
+    console.log("Conectado al microservicio de medicos:", serverPrimary);
     currentServer = serverPrimary;
   } else {
-    console.error("El servidor principal no está disponible.");
+    console.error("El microservicio de medicos no está disponible");
     toast.error(
-      "El servidor no está disponible. Por favor, intente de nuevo más tarde.",
+      "El microservicio de medicos no está disponible",
       {
         position: "bottom-right",
         autoClose: 5000,
@@ -213,7 +213,28 @@ export const obtenerMedicosPorEspecialidad = async (id) => {
   } catch (error) {
     toast.error(
       error.response?.data?.message ||
-        "Error al obtener médicos por especialidad",
+      "Error al obtener médicos por especialidad",
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }
+    );
+    throw error;
+  }
+};
+
+export const obtenerMedicosPorEspecialidadCompleto = async (id) => {
+  try {
+    const respuesta = await api.get(`/especialidadcompleto/${id}`);
+    return respuesta.data;
+  } catch (error) {
+    toast.error(
+      error.response?.data?.message ||
+      "Error al obtener médicos por especialidad",
       {
         position: "bottom-right",
         autoClose: 5000,
@@ -236,7 +257,7 @@ export const obtenerEspecialidadesPorMedico = async (medicoId) => {
   } catch (error) {
     toast.error(
       error.response?.data?.message ||
-        "Error al obtener especialidades del médico",
+      "Error al obtener especialidades del médico",
       {
         position: "bottom-right",
         autoClose: 5000,

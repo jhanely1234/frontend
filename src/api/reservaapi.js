@@ -31,12 +31,12 @@ const checkServerAvailability = async (url) => {
 const initializeServerConnection = async () => {
   const isPrimaryAvailable = await checkServerAvailability(serverPrimary);
   if (isPrimaryAvailable) {
-    console.log("Conectado al servidor principal:", serverPrimary);
+    console.log("Conectado al microservicio de reservas:", serverPrimary);
     currentServer = serverPrimary;
   } else {
-    console.error("El servidor principal no está disponible.");
+    console.error("El microservicio de reservas no está disponible.");
     toast.error(
-      "El servidor no está disponible. Por favor, intente de nuevo más tarde.",
+      "El microservicio de reservas no está disponible.",
       {
         position: "bottom-right",
         autoClose: 5000,
@@ -171,7 +171,7 @@ export const obtenerCalendario = async (medicoId, especialidadId) => {
     mostrarToast(
       "error",
       error.response?.data?.message ||
-        "Error al obtener la disponibilidad del médico"
+      "Error al obtener la disponibilidad del médico"
     );
     throw error;
   }
@@ -186,7 +186,7 @@ export const obtenerMedicosdeEspecialidad = async (especialidadId) => {
     mostrarToast(
       "error",
       error.response?.data?.message ||
-        "Error al obtener los médicos de la especialidad"
+      "Error al obtener los médicos de la especialidad"
     );
     throw error;
   }
@@ -221,6 +221,25 @@ export const crearConsulta = async (consulta) => {
     throw error;
   }
 };
+
+// Nueva API: Calificar consulta
+export const calificarConsulta = async (consultaId, calificacion) => {
+  try {
+    const respuesta = await api.post("/consulta/calificar", {
+      consultaId,
+      calificacion,
+    });
+    mostrarToast("success", "Consulta calificada exitosamente");
+    return respuesta.data;
+  } catch (error) {
+    mostrarToast(
+      "error",
+      error.response?.data?.message || "Error al calificar la consulta"
+    );
+    throw error;
+  }
+};
+
 
 // Nueva API: Confirmar la reserva del médico
 export const confirmarReservaMedico = async (
