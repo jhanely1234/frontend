@@ -1,374 +1,463 @@
-import React, { useState, useEffect, useRef } from 'react';
-import * as echarts from 'echarts/core';
-import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
-import { PieChart, BarChart } from 'echarts/charts';
-import { CanvasRenderer } from 'echarts/renderers';
-import { FileBarChart, Users, UserCog, Calendar } from 'lucide-react';
-import { obtenerReporteConsultas, obtenerReporteReservas, obtenerReportePaciente, obtenerReporteDoctor } from "../../api/reportesApi";
-import { obtenerTodosPacientes } from "../../api/pacienteapi";
-import { obtenerTodosMedicos } from "../../api/medicoapi";
-import Swal from 'sweetalert2';
+'use client'
 
-echarts.use([GridComponent, TooltipComponent, LegendComponent, PieChart, BarChart, CanvasRenderer]);
+import React, { useState, useEffect } from 'react'
+import { jsPDF } from 'jspdf'
+import { FileBarChart, Users, UserCog, Calendar } from 'lucide-react'
+import { obtenerReporteConsultas, obtenerReporteReservas, obtenerReportePaciente, obtenerReporteDoctor } from "../../api/reportesApi"
+import { obtenerTodosPacientes } from "../../api/pacienteapi"
+import { obtenerTodosMedicos } from "../../api/medicoapi"
 
-export default function ReportsDashboard() {
-  const [reportType, setReportType] = useState('consultation');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [status, setStatus] = useState('');
-  const [patientId, setPatientId] = useState('');
-  const [doctorId, setDoctorId] = useState('');
-  const [reportData, setReportData] = useState(null);
-  const [patients, setPatients] = useState([]);
-  const [doctors, setDoctors] = useState([]);
-  const chartRef = useRef(null);
+export default function PanelReportes() {
+  const [tipoReporte, setTipoReporte] = useState('consultas')
+  const [fechaInicio, setFechaInicio] = useState('')
+  const [fechaFin, setFechaFin] = useState('')
+  const [estado, setEstado] = useState('')
+  const [pacienteId, setPacienteId] = useState('')
+  const [medicoId, setMedicoId] = useState('')
+  const [datosReporte, setDatosReporte] = useState(null)
+  const [pacientes, setPacientes] = useState([])
+  const [medicos, setMedicos] = useState([])
+  const [pdfPreview, setPdfPreview] = useState(null)
 
   useEffect(() => {
-    const fetchPatients = async () => {
+    const obtenerPacientes = async () => {
       try {
-        const data = await obtenerTodosPacientes();
-        setPatients(data);
+        const data = await obtenerTodosPacientes()
+        setPacientes(data)
       } catch (error) {
-        console.error("Error fetching patients:", error);
+        console.error("Error al obtener pacientes:", error)
+        alert("No se pudieron cargar los pacientes")
       }
-    };
-
-    const fetchDoctors = async () => {
-      try {
-        const data = await obtenerTodosMedicos();
-        setDoctors(data);
-      } catch (error) {
-        console.error("Error fetching doctors:", error);
-      }
-    };
-
-    fetchPatients();
-    fetchDoctors();
-  }, []);
-
-  useEffect(() => {
-    if (reportData) {
-      renderChart();
     }
-  }, [reportData]);
 
-  const handleGenerateReport = async () => {
+    const obtenerMedicos = async () => {
+      try {
+        const data = await obtenerTodosMedicos()
+        setMedicos(data.medicos)
+      } catch (error) {
+        console.error("Error al obtener médicos:", error)
+        alert("No se pudieron cargar los médicos")
+      }
+    }
+
+    obtenerPacientes()
+    obtenerMedicos()
+  }, [])
+
+  useEffect(() => {
+    setFechaInicio('')
+    setFechaFin('')
+    setEstado('')
+    setPacienteId('')
+    setMedicoId('')
+    setDatosReporte(null)
+    setPdfPreview(null)
+  }, [tipoReporte])
+
+  const manejarGenerarReporte = async () => {
     try {
-      let data;
-      switch (reportType) {
-        case 'consultation':
-          data = await obtenerReporteConsultas(startDate, endDate);
-          break;
-        case 'reservation':
-          data = await obtenerReporteReservas(startDate, endDate, status);
-          break;
-        case 'patient':
-          data = await obtenerReportePaciente(patientId, startDate, endDate, status);
-          break;
-        case 'doctor':
-          data = await obtenerReporteDoctor(doctorId, startDate, endDate, status);
-          break;
+      let datos
+      switch (tipoReporte) {
+        case 'consultas':
+          datos = await obtenerReporteConsultas(fechaInicio, fechaFin)
+          break
+        case 'reservas':
+          datos = await obtenerReporteReservas(fechaInicio, fechaFin, estado)
+          break
+        case 'pacientes':
+          datos = await obtenerReportePaciente(pacienteId, fechaInicio, fechaFin, estado)
+          break
+        case 'medicos':
+          datos = await obtenerReporteDoctor(medicoId, fechaInicio, fechaFin, estado)
+          break
         default:
-          throw new Error('Invalid report type');
+          throw new Error('Tipo de reporte no válido')
       }
-      setReportData(data);
+      setDatosReporte(datos)
+      generarPDF(datos)
     } catch (error) {
-      console.error("Error generating report:", error);
-      
+      console.error("Error al generar el reporte:", error)
+      alert("Hubo un problema al generar el reporte")
     }
-  };
+  }
 
-  const renderChart = () => {
-    if (!chartRef.current || !reportData) return;
+  const generarPDF = (datos) => {
+    const doc = new jsPDF()
 
-    const chart = echarts.init(chartRef.current);
-
-    let option;
-    switch (reportType) {
-      case 'consultation':
-      case 'reservation':
-        option = {
-          title: {
-            text: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Status Distribution`,
-            left: 'center'
-          },
-          tooltip: {
-            trigger: 'item'
-          },
-          legend: {
-            orient: 'vertical',
-            left: 'left'
-          },
-          series: [
-            {
-              name: 'Status',
-              type: 'pie',
-              radius: '50%',
-              data: [
-                { value: reportData.totals[`${reportType}esAtendidas`], name: 'Attended' },
-                { value: reportData.totals[`${reportType}esPendientes`], name: 'Pending' },
-                { value: reportData.totals[`${reportType}esCanceladas`], name: 'Cancelled' }
-              ],
-              emphasis: {
-                itemStyle: {
-                  shadowBlur: 10,
-                  shadowOffsetX: 0,
-                  shadowColor: 'rgba(0, 0, 0, 0.5)'
-                }
-              }
-            }
-          ]
-        };
-        break;
-      case 'patient':
-      case 'doctor':
-        option = {
-          title: {
-            text: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report Summary`,
-            left: 'center'
-          },
-          tooltip: {
-            trigger: 'axis'
-          },
-          xAxis: {
-            type: 'category',
-            data: ['Total Reservations', 'Attended', 'Pending', 'Cancelled', 'Total Consultations']
-          },
-          yAxis: {
-            type: 'value'
-          },
-          series: [
-            {
-              name: 'Count',
-              type: 'bar',
-              data: [
-                reportData.data.totals.totalReservas,
-                reportData.data.totals.reservasAtendidas,
-                reportData.data.totals.reservasPendientes,
-                reportData.data.totals.reservasCanceladas,
-                reportData.data.totals.totalConsultas
-              ]
-            }
-          ]
-        };
-        break;
+    const checkNewPage = (y) => {
+      if (y >= 280) {
+        doc.addPage()
+        return 20
+      }
+      return y
     }
 
-    chart.setOption(option);
-  };
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(24)
+    doc.setTextColor(0, 102, 204)
+    doc.text(`Reporte de ${tipoReporte.charAt(0).toUpperCase() + tipoReporte.slice(1)}`, 105, 20, { align: 'center' })
+
+    doc.setFont("helvetica", "normal")
+    doc.setFontSize(12)
+    doc.setTextColor(0, 0, 0)
+
+    let y = 40
+
+    if (tipoReporte === 'consultas' && datos) {
+      datos.data.forEach((consulta, index) => {
+        y = checkNewPage(y)
+        doc.setFont("helvetica", "bold")
+        doc.text(`Consulta ${index + 1}:`, 20, y)
+        y += 10
+        doc.setFont("helvetica", "normal")
+
+        y = checkNewPage(y)
+        doc.text(`Paciente: ${consulta.paciente.nombreCompleto}`, 20, y)
+        y += 10
+
+        y = checkNewPage(y)
+        doc.text(`Médico: ${consulta.medico.nombreCompleto}`, 20, y)
+        y += 10
+
+        y = checkNewPage(y)
+        doc.text(`Fecha de Consulta: ${new Date(consulta.consulta.fechaConsulta).toLocaleString()}`, 20, y)
+        y += 10
+
+        y = checkNewPage(y)
+        doc.text(`Motivo: ${consulta.consulta.motivoConsulta}`, 20, y)
+        y += 10
+
+        y = checkNewPage(y)
+        doc.text(`Diagnóstico: ${consulta.consulta.diagnostico}`, 20, y)
+        y += 10
+
+        y = checkNewPage(y)
+        doc.text(`Receta: ${consulta.consulta.receta}`, 20, y)
+        y += 10
+
+        const sv = consulta.consulta.signosVitales[0]
+        y = checkNewPage(y)
+        doc.text(`Signos Vitales:`, 20, y)
+        y += 10
+        doc.text(`FC: ${sv.Fc}, FR: ${sv.Fr}, Temperatura: ${sv.Temperatura}, Peso: ${sv.peso}, Talla: ${sv.talla}`, 30, y)
+        y += 20
+      })
+
+      y = checkNewPage(y)
+      doc.setFont("helvetica", "bold")
+      doc.text("Totales:", 20, y)
+      y += 10
+      doc.setFont("helvetica", "normal")
+      doc.text(`Total Consultas: ${datos.totals.totalConsultas}`, 30, y)
+      y += 10
+      doc.text(`Consultas Atendidas: ${datos.totals.consultasAtendidas}`, 30, y)
+      y += 10
+      doc.text(`Consultas Pendientes: ${datos.totals.consultasPendientes}`, 30, y)
+      y += 10
+      doc.text(`Consultas Canceladas: ${datos.totals.consultasCanceladas}`, 30, y)
+    }
+
+    if (tipoReporte === 'reservas' && datos) {
+      datos.data.forEach((reserva, index) => {
+        y = checkNewPage(y)
+        doc.setFont("helvetica", "bold")
+        doc.text(`Reserva ${index + 1}:`, 20, y)
+        y += 10
+        doc.setFont("helvetica", "normal")
+
+        y = checkNewPage(y)
+        doc.text(`Paciente: ${reserva.paciente.nombreCompleto} (CI: ${reserva.paciente.ci})`, 20, y)
+        y += 10
+
+        y = checkNewPage(y)
+        doc.text(`Médico: ${reserva.medico.nombreCompleto} (${reserva.medico.especialidad})`, 20, y)
+        y += 10
+
+        y = checkNewPage(y)
+        doc.text(`Fecha de Reserva: ${new Date(reserva.reserva.fechaReserva).toLocaleDateString()}`, 20, y)
+        y += 10
+
+        y = checkNewPage(y)
+        doc.text(`Hora: ${reserva.reserva.horaInicio} - ${reserva.reserva.horaFin}`, 20, y)
+        y += 10
+
+        y = checkNewPage(y)
+        doc.text(`Estado: ${reserva.reserva.estado}`, 20, y)
+        y += 20
+      })
+
+      y = checkNewPage(y)
+      doc.setFont("helvetica", "bold")
+      doc.text("Totales:", 20, y)
+      y += 10
+      doc.setFont("helvetica", "normal")
+      doc.text(`Total Reservas: ${datos.totals.totalReservas}`, 30, y)
+      y += 10
+      doc.text(`Reservas Atendidas: ${datos.totals.reservasAtendidas}`, 30, y)
+      y += 10
+      doc.text(`Reservas Pendientes: ${datos.totals.reservasPendientes}`, 30, y)
+      y += 10
+      doc.text(`Reservas Canceladas: ${datos.totals.reservasCanceladas}`, 30, y)
+    }
+
+    if (tipoReporte === 'pacientes' && datos) {
+      const { paciente, reservas, consultas, totals } = datos.data
+
+      y = checkNewPage(y)
+      doc.setFont("helvetica", "bold")
+      doc.text("Información del Paciente:", 20, y)
+      y += 10
+      doc.setFont("helvetica", "normal")
+      doc.text(`Nombre: ${paciente.nombreCompleto}`, 30, y)
+      y += 10
+      doc.text(`CI: ${paciente.ci}`, 30, y)
+      y += 10
+      doc.text(`Fecha de Nacimiento: ${new Date(paciente.fechaNacimiento).toLocaleDateString()}`, 30, y)
+      y += 20
+
+      if (reservas.length > 0) {
+        y = checkNewPage(y)
+        doc.setFont("helvetica", "bold")
+        doc.text("Reservas:", 20, y)
+        y += 10
+        doc.setFont("helvetica", "normal")
+
+        reservas.forEach((reserva, index) => {
+          y = checkNewPage(y)
+          doc.text(`Reserva ${index + 1}:`, 30, y)
+          y += 10
+          doc.text(`Fecha: ${new Date(reserva.fechaReserva).toLocaleDateString()}`, 40, y)
+          y += 10
+          doc.text(`Hora: ${reserva.horaInicio}`, 40, y)
+          y += 10
+          doc.text(`Especialidad: ${reserva.especialidad}`, 40, y)
+          y += 10
+          doc.text(`Estado: ${reserva.estado}`, 40, y)
+          y += 10
+          doc.text(`Médico: ${reserva.medico}`, 40, y)
+          y += 15
+        })
+      }
+
+      if (consultas.length > 0) {
+        y = checkNewPage(y)
+        doc.setFont("helvetica", "bold")
+        doc.text("Consultas:", 20, y)
+        y += 10
+        doc.setFont("helvetica", "normal")
+
+        consultas.forEach((consulta, index) => {
+          y = checkNewPage(y)
+          doc.text(`Consulta ${index + 1}:`, 30, y)
+          y += 10
+          doc.text(`Fecha: ${new Date(consulta.fechaConsulta).toLocaleString()}`, 40, y)
+          y += 10
+          doc.text(`Motivo: ${consulta.motivoConsulta}`, 40, y)
+          y += 10
+          doc.text(`Diagnóstico: ${consulta.diagnostico}`, 40, y)
+          y += 10
+          doc.text(`Receta: ${consulta.receta}`, 40, y)
+          y += 15
+        })
+      }
+
+      y = checkNewPage(y)
+      doc.setFont("helvetica", "bold")
+      doc.text("Totales:", 20, y)
+      y += 10
+      doc.setFont("helvetica", "normal")
+      doc.text(`Total Reservas: ${totals.totalReservas}`, 30, y)
+      y += 10
+      doc.text(`Reservas Atendidas: ${totals.reservasAtendidas}`, 30, y)
+      y += 10
+      doc.text(`Reservas Pendientes: ${totals.reservasPendientes}`, 30, y)
+      y += 10
+      doc.text(`Reservas Canceladas: ${totals.reservasCanceladas}`, 30, y)
+      y += 10
+      doc.text(`Total Consultas: ${totals.totalConsultas}`, 30, y)
+    }
+
+    if (tipoReporte === 'medicos' && datos) {
+      const { medico, reservas, consultas, totals } = datos.data
+
+      y = checkNewPage(y)
+      doc.setFont("helvetica", "bold")
+      doc.text("Información del Médico:", 20, y)
+      y += 10
+      doc.setFont("helvetica", "normal")
+      doc.text(`Nombre: ${medico.nombreCompleto}`, 30, y)
+      y += 10
+      doc.text(`Especialidades: ${medico.especialidades}`, 30, y)
+      y += 10
+      doc.text(`Turno: ${medico.turno}`, 30, y)
+      y += 20
+
+      if (reservas.length > 0) {
+        y = checkNewPage(y)
+        doc.setFont("helvetica", "bold")
+        doc.text("Reservas:", 20, y)
+        y += 10
+        doc.setFont("helvetica", "normal")
+
+        reservas.forEach((reserva, index) => {
+          y = checkNewPage(y)
+          doc.text(`Reserva ${index + 1}:`, 30, y)
+          y += 10
+          doc.text(`Fecha: ${new Date(reserva.fechaReserva).toLocaleDateString()}`, 40, y)
+          y += 10
+          doc.text(`Hora: ${reserva.horaInicio}`, 40, y)
+          y += 10
+          doc.text(`Especialidad: ${reserva.especialidad}`, 40, y)
+          y += 10
+          doc.text(`Estado: ${reserva.estado}`, 40, y)
+          y += 10
+          doc.text(`Paciente: ${reserva.paciente}`, 40, y)
+          y += 15
+        })
+      }
+
+      if (consultas.length > 0) {
+        y = checkNewPage(y)
+        doc.setFont("helvetica", "bold")
+        doc.text("Consultas:", 20, y)
+        y += 10
+        doc.setFont("helvetica", "normal")
+
+        consultas.forEach((consulta, index) => {
+          y = checkNewPage(y)
+          doc.text(`Consulta ${index + 1}:`, 30, y)
+          y += 10
+          doc.text(`Fecha: ${new Date(consulta.fechaConsulta).toLocaleString()}`, 40, y)
+          y += 10
+          doc.text(`Motivo: ${consulta.motivoConsulta}`, 40, y)
+          y += 10
+          doc.text(`Diagnóstico: ${consulta.diagnostico}`, 40, y)
+          y += 10
+          doc.text(`Receta: ${consulta.receta}`, 40, y)
+          y += 10
+          doc.text(`Paciente: ${consulta.paciente}`, 40, y)
+          y += 15
+        })
+      }
+
+      y = checkNewPage(y)
+      doc.setFont("helvetica", "bold")
+      doc.text("Totales:", 20, y)
+      y += 10
+      doc.setFont("helvetica", "normal")
+      doc.text(`Total Reservas: ${totals.totalReservas}`, 30, y)
+      y += 10
+      doc.text(`Reservas Atendidas: ${totals.reservasAtendidas}`, 30, y)
+      y += 10
+      doc.text(`Reservas Pendientes: ${totals.reservasPendientes}`, 30, y)
+      y += 10
+      doc.text(`Reservas Canceladas: ${totals.reservasCanceladas}`, 30, y)
+      y += 10
+      doc.text(`Total Consultas: ${totals.totalConsultas}`, 30, y)
+    }
+
+    const pdfDataUri = doc.output('datauristring')
+    setPdfPreview(pdfDataUri)
+  }
 
   return (
-    <div className="container mx-auto p-4 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-blue-600">Medical Reports Dashboard</h1>
-      <div className="mb-4">
-        <div className="flex space-x-2 mb-4">
-          {['consultation', 'reservation', 'patient', 'doctor'].map((type) => (
-            <button
-              key={type}
-              onClick={() => setReportType(type)}
-              className={`flex items-center justify-center px-4 py-2 rounded-md ${
-                reportType === type ? 'bg-blue-500 text-white' : 'bg-white text-blue-500'
-              }`}
-            >
-              {type === 'consultation' && <FileBarChart className="mr-2" />}
-              {type === 'reservation' && <Calendar className="mr-2" />}
-              {type === 'patient' && <Users className="mr-2" />}
-              {type === 'doctor' && <UserCog className="mr-2" />}
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-            </button>
-          ))}
-        </div>
-        <div className="bg-white shadow-md rounded-lg p-6">
-          <h2 className="text-2xl font-semibold mb-4">{reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            {reportType === 'patient' && (
+    <div className="container mx-auto p-4 space-y-8">
+      <h1 className="text-4xl font-bold text-blue-600">Panel de Reportes Médicos</h1>
+      <div className="bg-white shadow-md rounded-lg p-6">
+        <h2 className="text-2xl font-semibold mb-4">Generar Reporte</h2>
+        <div className="space-y-4">
+          <div className="flex space-x-2">
+            {['consultas', 'reservas', 'pacientes', 'medicos'].map((tipo) => (
+              <button
+                key={tipo}
+                onClick={() => setTipoReporte(tipo)}
+                className={`flex items-center justify-center px-4 py-2 rounded-md ${tipoReporte === tipo
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+              >
+                {tipo === 'consultas' && <FileBarChart className="mr-2 h-4 w-4" />}
+                {tipo === 'reservas' && <Calendar className="mr-2 h-4 w-4" />}
+                {tipo === 'pacientes' && <Users className="mr-2 h-4 w-4" />}
+                {tipo === 'medicos' && <UserCog className="mr-2 h-4 w-4" />}
+                {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {tipoReporte === 'pacientes' && (
               <select
-                value={patientId}
-                onChange={(e) => setPatientId(e.target.value)}
+                value={pacienteId}
+                onChange={(e) => setPacienteId(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-md"
               >
-                <option value="">Select Patient</option>
-                {patients.map((patient) => (
-                  <option key={patient._id} value={patient._id}>
-                    {patient.name} {patient.lastname}
+                <option value="">Seleccionar Paciente</option>
+                {Array.isArray(pacientes) && pacientes.map((paciente) => (
+                  <option key={paciente._id} value={paciente._id}>
+                    {paciente.name} {paciente.lastname}
                   </option>
                 ))}
               </select>
             )}
-            {reportType === 'doctor' && (
+            {tipoReporte === 'medicos' && (
               <select
-                value={doctorId}
-                onChange={(e) => setDoctorId(e.target.value)}
+                value={medicoId}
+                onChange={(e) => setMedicoId(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-md"
               >
-                <option value="">Select Doctor</option>
-                {doctors.map((doctor) => (
-                  <option key={doctor._id} value={doctor._id}>
-                    {doctor.name} {doctor.lastname}
+                <option value="">Seleccionar Médico</option>
+                {Array.isArray(medicos) && medicos.map((medico) => (
+                  <option key={medico._id} value={medico._id}>
+                    {medico.name} {medico.lastname}
                   </option>
                 ))}
               </select>
             )}
             <input
               type="date"
-              placeholder="Start Date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              placeholder="Fecha de Inicio"
+              value={fechaInicio}
+              onChange={(e) => setFechaInicio(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md"
             />
             <input
               type="date"
-              placeholder="End Date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              placeholder="Fecha de Fin"
+              value={fechaFin}
+              onChange={(e) => setFechaFin(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md"
             />
             <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              value={estado}
+              onChange={(e) => setEstado(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md"
             >
-             <option value="">All Statuses</option>
+              <option value="">Todos los estados</option>
               <option value="atendido">Atendido</option>
               <option value="pendiente">Pendiente</option>
               <option value="cancelado">Cancelado</option>
             </select>
           </div>
           <button
-            onClick={handleGenerateReport}
+            onClick={manejarGenerarReporte}
             className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300"
           >
-            Generate Report
+            Generar Reporte
           </button>
         </div>
       </div>
-      {reportData && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white shadow-md rounded-lg p-6">
-              <h3 className="text-xl font-semibold mb-4">Summary</h3>
-              {reportType === 'consultation' && (
-                <>
-                  <p>Total Consultations: {reportData.totals.totalConsultas}</p>
-                  <p>Attended: {reportData.totals.consultasAtendidas}</p>
-                  <p>Pending: {reportData.totals.consultasPendientes}</p>
-                  <p>Cancelled: {reportData.totals.consultasCanceladas}</p>
-                </>
-              )}
-              {reportType === 'reservation' && (
-                <>
-                  <p>Total Reservations: {reportData.totals.totalReservas}</p>
-                  <p>Attended: {reportData.totals.reservasAtendidas}</p>
-                  <p>Pending: {reportData.totals.reservasPendientes}</p>
-                  <p>Cancelled: {reportData.totals.reservasCanceladas}</p>
-                </>
-              )}
-              {(reportType === 'patient' || reportType === 'doctor') && (
-                <>
-                  <p>Total Reservations: {reportData.data.totals.totalReservas}</p>
-                  <p>Attended Reservations: {reportData.data.totals.reservasAtendidas}</p>
-                  <p>Pending Reservations: {reportData.data.totals.reservasPendientes}</p>
-                  <p>Cancelled Reservations: {reportData.data.totals.reservasCanceladas}</p>
-                  <p>Total Consultations: {reportData.data.totals.totalConsultas}</p>
-                </>
-              )}
-            </div>
-            <div className="bg-white shadow-md rounded-lg p-6">
-              <h3 className="text-xl font-semibold mb-4">Chart</h3>
-              <div ref={chartRef} style={{ width: '100%', height: '300px' }}></div>
-            </div>
-          </div>
-          <div className="bg-white shadow-md rounded-lg p-6">
-            <h3 className="text-xl font-semibold mb-4">Detailed Report</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white">
-                <thead className="bg-gray-100">
-                  <tr>
-                    {reportType === 'consultation' && (
-                      <>
-                        <th className="py-2 px-4 border-b text-left">Patient Name</th>
-                        <th className="py-2 px-4 border-b text-left">Date</th>
-                        <th className="py-2 px-4 border-b text-left">Time</th>
-                        <th className="py-2 px-4 border-b text-left">Status</th>
-                        <th className="py-2 px-4 border-b text-left">Doctor</th>
-                        <th className="py-2 px-4 border-b text-left">Reason</th>
-                      </>
-                    )}
-                    {reportType === 'reservation' && (
-                      <>
-                        <th className="py-2 px-4 border-b text-left">Patient Name</th>
-                        <th className="py-2 px-4 border-b text-left">Date</th>
-                        <th className="py-2 px-4 border-b text-left">Time</th>
-                        <th className="py-2 px-4 border-b text-left">Status</th>
-                        <th className="py-2 px-4 border-b text-left">Doctor</th>
-                        <th className="py-2 px-4 border-b text-left">Specialty</th>
-                      </>
-                    )}
-                    {reportType === 'patient' && (
-                      <>
-                        <th className="py-2 px-4 border-b text-left">Date</th>
-                        <th className="py-2 px-4 border-b text-left">Time</th>
-                        <th className="py-2 px-4 border-b text-left">Specialty</th>
-                        <th className="py-2 px-4 border-b text-left">Status</th>
-                        <th className="py-2 px-4 border-b text-left">Doctor</th>
-                      </>
-                    )}
-                    {reportType === 'doctor' && (
-                      <>
-                        <th className="py-2 px-4 border-b text-left">Date</th>
-                        <th className="py-2 px-4 border-b text-left">Time</th>
-                        <th className="py-2 px-4 border-b text-left">Specialty</th>
-                        <th className="py-2 px-4 border-b text-left">Status</th>
-                        <th className="py-2 px-4 border-b text-left">Patient</th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportType === 'consultation' && reportData.data.map((item, index) => (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                      <td className="py-2 px-4 border-b">{item.paciente.nombreCompleto}</td>
-                      <td className="py-2 px-4 border-b">{new Date(item.consulta.fechaConsulta).toLocaleDateString()}</td>
-                      <td className="py-2 px-4 border-b">{`${item.consulta.horaInicio} - ${item.consulta.horaFin}`}</td>
-                      <td className="py-2 px-4 border-b">{item.consulta.estado}</td>
-                      <td className="py-2 px-4 border-b">{item.medico.nombreCompleto}</td>
-                      <td className="py-2 px-4 border-b">{item.consulta.motivoConsulta}</td>
-                    </tr>
-                  ))}
-                  {reportType === 'reservation' && reportData.data.map((item, index) => (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                      <td className="py-2 px-4 border-b">{item.paciente.nombreCompleto}</td>
-                      <td className="py-2 px-4 border-b">{new Date(item.reserva.fechaReserva).toLocaleDateString()}</td>
-                      <td className="py-2 px-4 border-b">{`${item.reserva.horaInicio} - ${item.reserva.horaFin}`}</td>
-                      <td className="py-2 px-4 border-b">{item.reserva.estado}</td>
-                      <td className="py-2 px-4 border-b">{item.medico.nombreCompleto}</td>
-                      <td className="py-2 px-4 border-b">{item.medico.especialidad}</td>
-                    </tr>
-                  ))}
-                  {reportType === 'patient' && reportData.data.reservas.map((item, index) => (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                      <td className="py-2 px-4 border-b">{new Date(item.fechaReserva).toLocaleDateString()}</td>
-                      <td className="py-2 px-4 border-b">{`${item.horaInicio} - ${item.horaFin}`}</td>
-                      <td className="py-2 px-4 border-b">{item.especialidad}</td>
-                      <td className="py-2 px-4 border-b">{item.estado}</td>
-                      <td className="py-2 px-4 border-b">{item.medico}</td>
-                    </tr>
-                  ))}
-                  {reportType === 'doctor' && reportData.data.reservas.map((item, index) => (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                      <td className="py-2 px-4 border-b">{new Date(item.fechaReserva).toLocaleDateString()}</td>
-                      <td className="py-2 px-4 border-b">{`${item.horaInicio} - ${item.horaFin}`}</td>
-                      <td className="py-2 px-4 border-b">{item.especialidad}</td>
-                      <td className="py-2 px-4 border-b">{item.estado}</td>
-                      <td className="py-2 px-4 border-b">{item.paciente}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+      {pdfPreview && (
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <h2 className="text-2xl font-semibold mb-4">Vista Previa del Reporte</h2>
+          <iframe src={pdfPreview} className="w-full h-[600px] mb-4" />
+          <button
+            onClick={() => window.open(pdfPreview)}
+            className="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition duration-300"
+          >
+            Descargar PDF
+          </button>
         </div>
       )}
     </div>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -95,7 +95,6 @@ export default function DoctorForm() {
     try {
       setIsLoading(true);
       const response = await obtenerTodasEspecialidades();
-      console.log("Response:", response);
       if (response.status === "success" && Array.isArray(response.especialidades)) {
         setEspecialidades(
           response.especialidades.map((especialidad) => ({
@@ -104,11 +103,9 @@ export default function DoctorForm() {
           }))
         );
       } else {
-        console.error("Error fetching especialidades:", response.message);
         throw new Error("Formato de respuesta inesperado");
       }
     } catch (error) {
-      console.error("Error fetching especialidades:", error);
       Swal.fire("Error", "No se pudieron cargar las especialidades", "error");
     } finally {
       setIsLoading(false);
@@ -119,7 +116,6 @@ export default function DoctorForm() {
     try {
       setIsLoading(true);
       const data = await obtenerMedicoPorId2(medicoId);
-      console.log("Data:", data);
       if (data.response === "success" && data.medico) {
         const medico = data.medico;
         Object.keys(medico).forEach((key) => {
@@ -131,14 +127,13 @@ export default function DoctorForm() {
               label: esp.especialidad.name
             }));
             setValue("especialidades", especialidadesFormateadas);
-            
-            // Configurar turno y disponibilidades
+
             const medicoGeneral = medico[key].find(esp => esp.especialidad.name.toLowerCase() === "medicina general");
             if (medicoGeneral) {
               setValue("turno", medicoGeneral.turno);
             }
-            
-            const disponibilidades = medico[key].flatMap(esp => 
+
+            const disponibilidades = medico[key].flatMap(esp =>
               esp.disponibilidades ? esp.disponibilidades.map(d => ({
                 ...d,
                 especialidad: esp.especialidad._id
@@ -153,12 +148,7 @@ export default function DoctorForm() {
         throw new Error("Formato de respuesta inesperado");
       }
     } catch (error) {
-      console.error("Error fetching medico:", error);
-      Swal.fire(
-        "Error",
-        "No se pudo cargar la información del médico",
-        "error"
-      );
+      Swal.fire("Error", "No se pudo cargar la información del médico", "error");
     } finally {
       setIsLoading(false);
     }
@@ -167,11 +157,20 @@ export default function DoctorForm() {
   const onSubmit = async (data) => {
     try {
       setIsLoading(true);
-      const medicoData = {
-        ...data,
-        especialidades: data.especialidades.map((e) => e.value),
-        fechaNacimiento: format(data.fechaNacimiento, "yyyy-MM-dd")
-      };
+
+      const medicoData = {};
+
+      if (data.email) {
+        medicoData.email = data.email;
+      }
+      if (data.password) {
+        medicoData.password = data.password;
+      }
+      if (data.telefono) {
+        medicoData.telefono = data.telefono;
+      }
+
+      medicoData.especialidades = data.especialidades.map((e) => e.value);
 
       const isMedicoGeneral = data.especialidades.some(
         (esp) => esp.label.toLowerCase() === "medicina general"
@@ -185,40 +184,24 @@ export default function DoctorForm() {
             setIsLoading(false);
             return;
           }
-          delete medicoData.disponibilidad;
         } else {
-          const otrasEspecialidades = data.especialidades.filter(
-            (esp) => esp.label.toLowerCase() !== "medicina general"
-          );
-          if (otrasEspecialidades.length > 0) {
-            const horariosPermitidos = data.turno === "mañana" ? horariosTarde : horariosManana;
-            medicoData.disponibilidad = data.disponibilidad
-              .filter((d) => otrasEspecialidades.some((esp) => esp.value === d.especialidad))
-              .filter((d) => horariosPermitidos.some((h) => h.value === d.inicio))
-              .map(({ dia, inicio, fin, especialidad }) => ({
-                dia,
-                inicio,
-                fin,
-                especialidad
-              }));
-          } else {
-            delete medicoData.disponibilidad;
-          }
-        }
-      } else {
-        delete medicoData.turno;
-        medicoData.disponibilidad = data.disponibilidad.map(
-          ({ dia, inicio, fin, especialidad }) => ({
+          medicoData.disponibilidad = data.disponibilidad.map(({ dia, inicio, fin, especialidad }) => ({
             dia,
             inicio,
             fin,
             especialidad
-          })
-        );
+          }));
+        }
+      } else {
+        medicoData.disponibilidad = data.disponibilidad.map(({ dia, inicio, fin, especialidad }) => ({
+          dia,
+          inicio,
+          fin,
+          especialidad
+        }));
       }
 
       if (isEditing) {
-        console.log("medicoData:", medicoData);
         await actualizarMedico(id, medicoData);
         Swal.fire("Éxito", "Médico actualizado correctamente", "success");
       } else {
@@ -227,8 +210,7 @@ export default function DoctorForm() {
       }
       navigate("/medico");
     } catch (error) {
-      console.error("Error saving medico:", error);
-      Swal.fire("Error", error.response.data.message || "No se pudo guardar la información del médico", "error");
+      Swal.fire("Error", error.response?.data?.message || "No se pudo guardar la información del médico", "error");
     } finally {
       setIsLoading(false);
     }
@@ -236,18 +218,12 @@ export default function DoctorForm() {
 
   const handleCreateEspecialidad = async () => {
     if (!newEspecialidad) {
-      Swal.fire(
-        "Error",
-        "El nombre de la especialidad no puede estar vacío",
-        "error"
-      );
+      Swal.fire("Error", "El nombre de la especialidad no puede estar vacío", "error");
       return;
     }
     try {
       setIsLoading(true);
-      const createdEspecialidad = await crearEspecialidad({
-        name: newEspecialidad
-      });
+      const createdEspecialidad = await crearEspecialidad({ name: newEspecialidad });
       setEspecialidades([
         ...especialidades,
         { value: createdEspecialidad._id, label: createdEspecialidad.name }
@@ -256,7 +232,6 @@ export default function DoctorForm() {
       setIsModalOpen(false);
       Swal.fire("Éxito", "Especialidad creada correctamente", "success");
     } catch (error) {
-      console.error("Error creating especialidad:", error);
       Swal.fire("Error", "No se pudo crear la especialidad", "error");
     } finally {
       setIsLoading(false);
@@ -337,7 +312,6 @@ export default function DoctorForm() {
             </label>
             <input
               {...register("email", {
-                required: "El email es requerido",
                 pattern: {
                   value: /\S+@\S+\.\S+/,
                   message: "Email inválido"
@@ -345,7 +319,6 @@ export default function DoctorForm() {
               })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
               placeholder="ejemplo@correo.com"
-              readOnly={isEditing}
             />
             {errors.email && (
               <p className="text-red-500 text-xs mt-1">
@@ -353,105 +326,17 @@ export default function DoctorForm() {
               </p>
             )}
           </div>
-          {!isEditing && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                <FiLock className="inline-block mr-2" />
-                Contraseña:
-              </label>
-              <input
-                type="password"
-                {...register("password", {
-                  required: "La contraseña es requerida"
-                })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-                placeholder="Ingrese la contraseña"
-              />
-              {errors.password && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              <FiUser className="inline-block mr-2" />
-              CI:
+              <FiLock className="inline-block mr-2" />
+              Contraseña:
             </label>
             <input
-              type="number"
-              {...register("ci", {
-                required: "El CI es requerido",
-                min: {
-                  value: 100000,
-                  message: "El CI debe tener al menos 6 dígitos"
-                }
-              })}
+              type="password"
+              {...register("password")}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-              placeholder="Ingrese el CI (mínimo 6 dígitos)"
-              readOnly={isEditing}
+              placeholder="Ingrese la contraseña"
             />
-            {errors.ci && (
-              <p className="text-red-500 text-xs mt-1">{errors.ci.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <FiUsers className="inline-block mr-2" />
-              Género:
-            </label>
-            <select
-              {...register("genero", { required: "El género es requerido" })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-              disabled={isEditing}
-            >
-              <option value="" disabled>
-                Seleccione el género
-              </option>
-              <option value="Masculino">Masculino</option>
-              <option value="Femenino">Femenino</option>
-            </select>
-            {errors.genero && (
-              <p className="text-red-500 text-xs mt-1">{errors.genero.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <FiCalendar className="inline-block mr-2" />
-              Fecha de Nacimiento:
-            </label>
-            <Controller
-              name="fechaNacimiento"
-              control={control}
-              rules={{
-                required: "La fecha de nacimiento es requerida",
-                validate: (value) => {
-                  const age = new Date().getFullYear() - value.getFullYear();
-                  return age >= 18 || "Debe ser mayor de 18 años";
-                }
-              }}
-              render={({ field }) => (
-                <DatePicker
-                  {...field}
-                  selected={field.value}
-                  onChange={(date) => field.onChange(date)}
-                  maxDate={subYears(new Date(), 18)}
-                  showYearDropdown
-                  dateFormatCalendar="MMMM"
-                  yearDropdownItemNumber={100}
-                  scrollableYearDropdown
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-                  placeholderText="Seleccione la fecha de nacimiento"
-                  disabled={isEditing}
-                />
-              )}
-            />
-            {errors.fechaNacimiento && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.fechaNacimiento.message}
-              </p>
-            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -460,21 +345,10 @@ export default function DoctorForm() {
             </label>
             <input
               type="number"
-              {...register("telefono", {
-                required: "El teléfono es requerido",
-                min: {
-                  value: 10000000,
-                  message: "El teléfono debe tener al menos 8 dígitos"
-                }
-              })}
+              {...register("telefono")}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-              placeholder="Ingrese el teléfono (mínimo 8 dígitos)"
+              placeholder="Ingrese el teléfono"
             />
-            {errors.telefono && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.telefono.message}
-              </p>
-            )}
           </div>
         </div>
 
@@ -504,24 +378,6 @@ export default function DoctorForm() {
                   className="flex-grow"
                   classNamePrefix="select"
                   placeholder="Seleccione una o más especialidades"
-                  styles={{
-                    control: (base) => ({
-                      ...base,
-                      borderColor: "#e2e8f0",
-                      "&:hover": {
-                        borderColor: "#3b82f6"
-                      }
-                    }),
-                    option: (base, state) => ({
-                      ...base,
-                      backgroundColor: state.isSelected
-                        ? "#3b82f6"
-                        : state.isFocused
-                        ? "#bfdbfe"
-                        : "white",
-                      color: state.isSelected ? "white" : "#1f2937"
-                    })
-                  }}
                 />
               )}
             />
@@ -574,20 +430,6 @@ export default function DoctorForm() {
             <Controller
               name="disponibilidad"
               control={control}
-              defaultValue={[]}
-              rules={{
-                validate: (value) => {
-                  if (isMedicoGeneral && watchTurno !== "ambos") {
-                    const otrasEspecialidades = watchEspecialidades.filter(
-                      (esp) => esp.label.toLowerCase() !== "medicina general"
-                    );
-                    return otrasEspecialidades.length === 0 || value.length > 0 || 
-                      "Debe agregar al menos una disponibilidad para las especialidades adicionales";
-                  }
-                  return watchEspecialidades.length === 0 || value.length > 0 || 
-                    "Debe agregar al menos una disponibilidad";
-                }
-              }}
               render={({ field }) => (
                 <>
                   {field.value.map((item, index) => (
@@ -739,12 +581,14 @@ export default function DoctorForm() {
         </div>
       </form>
 
+      {/* Modal para crear nueva especialidad */}
       <Transition appear show={isModalOpen} as={React.Fragment}>
         <Dialog
           as="div"
           className="relative z-10"
           onClose={() => setIsModalOpen(false)}
         >
+          {/* Modal content */}
           <Transition.Child
             as={React.Fragment}
             enter="ease-out duration-300"

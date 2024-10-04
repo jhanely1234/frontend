@@ -7,12 +7,12 @@ import {
   confirmarReservaMedico,
   crearReserva,
   obtenerCalendario,
-  calificarConsulta, // Importar la función para calificar
+  calificarConsulta,
 } from "../../api/reservaapi";
 import { obtenerHistorialPorReservaId } from "../../api/historialapi";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/auth.hook";
-import { Modal, DatePicker, Select, Rate } from "antd"; // Usar Ant Design para las estrellas de calificación
+import { Modal, DatePicker, Select, Rate } from "antd";
 import Fuse from "fuse.js";
 import moment from "moment";
 import locale from "antd/es/date-picker/locale/es_ES";
@@ -37,9 +37,9 @@ export default function Reservas() {
   const [horasDisponibles, setHorasDisponibles] = useState([]);
   const [calendario, setCalendario] = useState([]);
   const [reservaAReprogramar, setReservaAReprogramar] = useState(null);
-  const [calificacion, setCalificacion] = useState(null); // Estado para almacenar la calificación
+  const [calificacion, setCalificacion] = useState(null);
   const [showCalificarModal, setShowCalificarModal] = useState(false);
-  const [consultaId, setConsultaId] = useState(null); // Estado para almacenar el ID de la consulta
+  const [consultaId, setConsultaId] = useState(null);
   const navigate = useNavigate();
   const {
     auth: { roles, _id },
@@ -271,8 +271,8 @@ export default function Reservas() {
 
     try {
       await calificarConsulta(consultaId, calificacion);
-      setShowCalificarModal(false); // Cerrar el modal después de calificar
-      await fetchReservas(); // Actualizar las reservas
+      setShowCalificarModal(false);
+      await fetchReservas();
     } catch (error) {
       console.error("Error al calificar:", error);
     }
@@ -532,6 +532,8 @@ export default function Reservas() {
                         </button>
                       </>
                     )}
+
+                  {/* Mostrar opción de confirmar y cancelar para médico */}
                   {roles.some((role) => role.name === "medico") && (
                     <>
                       {reserva.estadoConfirmacionMedico === "pendiente" && (
@@ -555,6 +557,25 @@ export default function Reservas() {
                           Atender
                         </button>
                       )}
+                      {reserva.estado_reserva !== "cancelado" && (
+                        <button
+                          onClick={() =>
+                            handleconfirmarReservaMedico(
+                              reserva._id,
+                              "cancelado"
+                            )
+                          }
+                          className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition duration-300"
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  {/* Mostrar opción de cancelar para paciente */}
+                  {roles.some((role) => role.name === "paciente") && (
+                    <>
                       {reserva.estado_reserva !== "cancelado" && (
                         <button
                           onClick={() =>

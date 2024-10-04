@@ -61,9 +61,20 @@ export default function Sidebar() {
   };
 
   const handleLogout = () => {
+    // Limpia localStorage
+    localStorage.clear();
+
+    // Limpia todas las cookies
+    document.cookie.split(";").forEach((cookie) => {
+      const name = cookie.split("=")[0].trim();
+      document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;";
+    });
+
+    // Limpia el estado de autenticación
     setAuth({});
     setIsLoading(false);
-    localStorage.removeItem("token");
+
+    // Redirige al login
     navigate("/auth/login");
   };
 
@@ -80,15 +91,13 @@ export default function Sidebar() {
         {isOpen ? <FaTimes /> : <FaBars />}
       </button>
       <div
-        className={`fixed inset-0 bg-gray-800 bg-opacity-75 z-40 lg:hidden transition-opacity duration-300 ${
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
+        className={`fixed inset-0 bg-gray-800 bg-opacity-75 z-40 lg:hidden transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
         onClick={toggleSidebar}
       ></div>
       <aside
-        className={`fixed top-0 left-0 h-full bg-gray-800 text-white w-64 overflow-y-auto transition-transform duration-300 ease-in-out transform z-50 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 lg:static lg:h-screen`}
+        className={`fixed top-0 left-0 h-full bg-gray-800 text-white w-64 overflow-y-auto transition-transform duration-300 ease-in-out transform z-50 ${isOpen ? "translate-x-0" : "-translate-x-full"
+          } lg:translate-x-0 lg:static lg:h-screen`}
       >
         <Link to="/">
           <div className="h-16 bg-gray-900 flex items-center justify-center cursor-pointer">
@@ -109,9 +118,8 @@ export default function Sidebar() {
                       Pacientes
                     </span>
                     <span
-                      className={`transform transition-transform ${
-                        openSubmenu === "pacientes" ? "rotate-180" : ""
-                      }`}
+                      className={`transform transition-transform ${openSubmenu === "pacientes" ? "rotate-180" : ""
+                        }`}
                     >
                       ▼
                     </span>
@@ -149,9 +157,8 @@ export default function Sidebar() {
                       Médicos
                     </span>
                     <span
-                      className={`transform transition-transform ${
-                        openSubmenu === "medicos" ? "rotate-180" : ""
-                      }`}
+                      className={`transform transition-transform ${openSubmenu === "medicos" ? "rotate-180" : ""
+                        }`}
                     >
                       ▼
                     </span>
@@ -189,9 +196,8 @@ export default function Sidebar() {
                       Reservas
                     </span>
                     <span
-                      className={`transform transition-transform ${
-                        openSubmenu === "reservas" ? "rotate-180" : ""
-                      }`}
+                      className={`transform transition-transform ${openSubmenu === "reservas" ? "rotate-180" : ""
+                        }`}
                     >
                       ▼
                     </span>
@@ -229,9 +235,8 @@ export default function Sidebar() {
                       Reportes
                     </span>
                     <span
-                      className={`transform transition-transform ${
-                        openSubmenu === "reportes" ? "rotate-180" : ""
-                      }`}
+                      className={`transform transition-transform ${openSubmenu === "reportes" ? "rotate-180" : ""
+                        }`}
                     >
                       ▼
                     </span>
@@ -245,15 +250,6 @@ export default function Sidebar() {
                         >
                           <FaChartBar className="mr-2" />
                           Generar Reportes
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          to="/reportes/resumen"
-                          className="flex items-center p-2 rounded hover:bg-gray-700"
-                        >
-                          <FaChartBar className="mr-2" />
-                          Reporte Resumen
                         </Link>
                       </li>
                     </ul>

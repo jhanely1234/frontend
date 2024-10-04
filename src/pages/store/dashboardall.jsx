@@ -50,27 +50,53 @@ export default function UpdatedHospitalWelcome() {
     }
   };
 
-  const renderDisponibilidad = (disponibilidades, especialidad) => {
-    const turnosAgrupados = {};
+  // Función para agrupar disponibilidades por especialidad
+  const renderDisponibilidadPorEspecialidad = (disponibilidades) => {
+    const especialidadAgrupada = {};
 
+    // Agrupar disponibilidades por especialidad
     disponibilidades.forEach((disp) => {
-      const key = `${disp.inicio}-${disp.fin}-${disp.turno}`;
-      if (!turnosAgrupados[key]) {
-        turnosAgrupados[key] = [];
+      if (!especialidadAgrupada[disp.especialidad]) {
+        especialidadAgrupada[disp.especialidad] = [];
       }
-      turnosAgrupados[key].push(disp.dia);
+      especialidadAgrupada[disp.especialidad].push(disp);
     });
 
-    return Object.keys(turnosAgrupados).map((key, index) => {
-      const [inicio, fin, turno] = key.split('-');
-      const dias = turnosAgrupados[key];
+    return Object.keys(especialidadAgrupada).map((especialidadName, index) => {
+      const disponibilidadEspecialidad = especialidadAgrupada[especialidadName];
+      const turnosAgrupados = {};
+
+      // Agrupar turnos dentro de la especialidad
+      disponibilidadEspecialidad.forEach((disp) => {
+        const key = `${disp.inicio}-${disp.fin}-${disp.turno}`;
+        if (!turnosAgrupados[key]) {
+          turnosAgrupados[key] = [];
+        }
+        turnosAgrupados[key].push(disp.dia);
+      });
+
       return (
-        <li key={index} className="mb-2 flex items-center">
-          <Calendar className="w-5 h-5 mr-2 text-blue-500 flex-shrink-0" />
-          <span className="font-medium">{dias.length > 1 ? `${dias[0]} - ${dias[dias.length - 1]}` : dias[0]}</span>
-          <span className="ml-2">{inicio} - {fin}</span>
-          <span className="ml-2 text-blue-600 font-medium">({turno})</span>
-        </li>
+        <div key={index} className="mb-4 bg-blue-50 p-4 rounded-lg shadow-md">
+          <h4 className="text-lg font-semibold text-blue-700 mb-2">
+            {especialidadName}
+          </h4>
+          <ul>
+            {Object.keys(turnosAgrupados).map((key, idx) => {
+              const [inicio, fin, turno] = key.split('-');
+              const dias = turnosAgrupados[key];
+              return (
+                <li key={idx} className="mb-2 flex items-center">
+                  <Calendar className="w-5 h-5 mr-2 text-blue-500 flex-shrink-0" />
+                  <span className="font-medium">
+                    {dias.length > 1 ? `${dias[0]} - ${dias[dias.length - 1]}` : dias[0]}
+                  </span>
+                  <span className="ml-2">{inicio} - {fin}</span>
+                  <span className="ml-2 text-blue-600 font-medium">({turno})</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       );
     });
   };
@@ -242,7 +268,7 @@ export default function UpdatedHospitalWelcome() {
                   Disponibilidades:
                 </span>
                 <ul className="mt-2 space-y-2">
-                  {renderDisponibilidad(selectedMedico.disponibilidades, selectedEspecialidad.name)}
+                  {renderDisponibilidadPorEspecialidad(selectedMedico.disponibilidades)}
                 </ul>
               </div>
             </div>

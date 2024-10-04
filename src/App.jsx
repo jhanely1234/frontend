@@ -4,7 +4,6 @@ import AuthLayout from "./layouts/auth.layout";
 import Wrapper from "./layouts/Wrapper";
 import Receta from "./pages/receta/receta";
 import Reportes from "./pages/reportes/ReporteConsultas";
-import ResumenReservas from "./pages/reportes/ResumenReservas";
 import LoginPage from "./pages/auth/login.page";
 import RegisterPage from "./pages/auth/register.page";
 import PasswordPage from "./pages/auth/forgot-password.page";
@@ -57,7 +56,7 @@ const App = () => {
           <Route
             index
             element={
-              <PrivateRoute element={DashboardPage} allowedRoles={["admin", "medico", "recepcionista", "paciente" ]} />
+              <PrivateRoute element={DashboardPage} allowedRoles={["admin", "medico", "recepcionista", "paciente"]} />
             }
           />
           <Route
@@ -256,34 +255,6 @@ const App = () => {
           </Route>
           <Route path="reportes">
             <Route
-              index
-              element={
-                <PrivateRoute
-                  element={ResumenReservas}
-                  allowedRoles={[
-                    "recepcionista",
-                    "admin",
-                    "medico",
-                    "paciente"
-                  ]}
-                />
-              }
-            />
-            <Route
-              path="resumen"
-              element={
-                <PrivateRoute
-                  element={ResumenReservas}
-                  allowedRoles={[
-                    "recepcionista",
-                    "admin",
-                    "medico",
-                    "paciente"
-                  ]}
-                />
-              }
-            />
-            <Route
               path="reportes"
               element={
                 <PrivateRoute
@@ -297,6 +268,7 @@ const App = () => {
                 />
               }
             />
+
           </Route>
           <Route
             path="receta"

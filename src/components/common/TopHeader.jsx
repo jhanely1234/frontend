@@ -1,46 +1,36 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { FaUser, FaChevronDown, FaTimes, FaSpinner } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/auth.hook";
 import axiosClient from "../../services/axios.service";
-import {
-  FaUser,
-  FaChevronDown,
-  FaTimes,
-  FaSpinner,
-  FaEnvelope,
-  FaIdCard,
-  FaUserTag,
-  FaExclamationTriangle,
-} from "react-icons/fa";
-import logo from "../../assets/logo/logo_mediconsulta_original.png";
+import { obtenerMedicoPorId2 } from "../../api/medicoapi"; // Usar tu API para obtener datos de médicos
+import DoctorEditModal from "./DoctorEditModal"; // Modal para médicos
+import BasicEditModal from "./BasicEditModal"; // Modal básico para otros roles
 
 export default function TopHeader({ toggleSidebar }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [profileData, setProfileData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [profileData, setProfileData] = useState(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
-  const {
-    auth: { _id },
-    setAuth,
-    setIsLoading: setAuthLoading,
-  } = useAuth();
+  const { auth: { _id }, setAuth, setIsLoading: setAuthLoading } = useAuth();
 
   const handleLogout = () => {
+    localStorage.clear();
+    document.cookie.split(";").forEach((cookie) => {
+      const name = cookie.split("=")[0].trim();
+      document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;";
+    });
     setAuth({});
     setAuthLoading(false);
-    localStorage.removeItem("token");
     navigate("/auth/login");
   };
 
   const openModal = async () => {
     setIsModalOpen(true);
     setIsDropdownOpen(false);
-    if (!profileData) {
-      await fetchProfileData();
-    }
+    await fetchProfileData(); // Cargar los datos del perfil al abrir el modal
   };
 
   const closeModal = () => {
@@ -49,11 +39,9 @@ export default function TopHeader({ toggleSidebar }) {
 
   const fetchProfileData = async () => {
     setIsLoading(true);
-    setError(null);
     const token = localStorage.getItem("token");
 
     if (!token) {
-      setError("No se encontró el token de autenticación");
       setIsLoading(false);
       return;
     }
@@ -69,8 +57,7 @@ export default function TopHeader({ toggleSidebar }) {
       const { data } = await axiosClient.get("/auth/me", config);
       setProfileData(data);
     } catch (error) {
-      setError("Error al cargar los datos del perfil");
-      console.error("Error fetching profile data:", error);
+      console.error("Error al obtener datos del perfil:", error);
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +81,7 @@ export default function TopHeader({ toggleSidebar }) {
       <header className="bg-white shadow-md py-4 px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <img src={logo} alt="Logo" className="h-8 w-auto" />
+            {/* Logo y otros elementos */}
           </div>
           <div className="flex items-center space-x-4">
             {_id ? (
@@ -128,18 +115,7 @@ export default function TopHeader({ toggleSidebar }) {
               </div>
             ) : (
               <div className="space-x-2">
-                <Link
-                  to="/auth/login"
-                  className="text-gray-700 hover:text-gray-900"
-                >
-                  Iniciar sesión
-                </Link>
-                <Link
-                  to="/auth/registro"
-                  className="text-gray-700 hover:text-gray-900"
-                >
-                  Registrarse
-                </Link>
+                {/* Links de iniciar sesión y registro */}
               </div>
             )}
           </div>
@@ -159,55 +135,23 @@ export default function TopHeader({ toggleSidebar }) {
                 <FaTimes className="h-6 w-6" />
               </button>
             </div>
-            <div className="space-y-6">
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <FaSpinner className="animate-spin h-8 w-8 text-purple-500" />
-                </div>
-              ) : error ? (
-                <div className="text-red-500 flex items-center">
-                  <FaExclamationTriangle className="mr-2" />
-                  {error}
-                </div>
-              ) : profileData ? (
-                <>
-                  <div className="flex items-center space-x-4 bg-gray-100 p-4 rounded-lg">
-                    <FaUser className="h-12 w-12 text-gray-500" />
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800">
-                        {profileData.name}
-                      </h3>
-                      <p className="text-gray-600">
-                        {profileData.roles.map((role) => role.name).join(", ")}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <FaEnvelope className="text-gray-500" />
-                      <span className="font-medium">Email:</span>
-                      <span>{profileData.email}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <FaIdCard className="text-gray-500" />
-                      <span className="font-medium">ID:</span>
-                      <span>{profileData._id}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <FaUserTag className="text-gray-500" />
-                      <span className="font-medium">Roles:</span>
-                      <span>
-                        {profileData.roles.map((role) => role.name).join(", ")}
-                      </span>
-                    </div>
-                  </div>
-                </>
+
+            {/* Mostrar modal según el rol */}
+            {profileData ? (
+              profileData.roles.some((role) => role.name === "medico") ? (
+                <DoctorEditModal closeModal={closeModal} user={profileData} />
               ) : (
-                <p className="text-gray-500">
-                  No se encontraron datos del perfil.
-                </p>
-              )}
-            </div>
+                <BasicEditModal closeModal={closeModal} user={profileData} />
+              )
+            ) : (
+              <div className="flex justify-center items-center py-8">
+                {isLoading ? (
+                  <FaSpinner className="animate-spin h-8 w-8 text-purple-500" />
+                ) : (
+                  <p className="text-gray-500">No se encontraron datos del perfil.</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -22,7 +22,7 @@
     "echarts-for-react": "^3.0.2",
     "fuse.js": "^7.0.0",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.1",
+    "jspdf": "^2.5.2",
     "lightweight-charts": "^4.2.0",
     "lucide-react": "^0.438.0",
     "moment": "^2.30.1",
