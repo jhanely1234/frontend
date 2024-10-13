@@ -3,6 +3,12 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  esbuild: {
+    target: 'esnext' // Soporte para top-level await
+  },
+  build: {
+    target: ['esnext'] // Configura el target para navegadores modernos
+  },
   plugins: [
     react(),
     VitePWA({
@@ -14,36 +20,37 @@ export default defineConfig({
         "masked-icon.svg",
       ],
       manifest: {
-        name: "Mi App PWA",
-        short_name: "MiApp",
+        name: "Medi-Consulta",
+        short_name: "Medi-Consulta",
         description: "Descripción de mi aplicación PWA",
         theme_color: "#ffffff",
         icons: [
           {
-            src: "pwa-192x192.png",
+            src: "192x192.png",
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: "pwa-512x512.png",
+            src: "512x512.png",
             sizes: "512x512",
             type: "image/png",
           },
           {
-            src: "pwa-512x512.png",
+            src: "512x512.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",
           },
         ],
       },
-      // Esta es la clave para que funcione en desarrollo
       devOptions: {
-        enabled: false, // Activa el PWA en modo desarrollo
-        type: "module", // Usa el tipo de módulo para SW en modo dev
+        enabled: false, // Activa el PWA en desarrollo si lo deseas
+        type: "module",
         navigateFallback: "index.html",
       },
       workbox: {
+        globDirectory: "dist",
+        globPatterns: ["**/*.{js,css,html,wasm,png,jpg,svg,json}"], // Ajuste para cachear todos los archivos
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
