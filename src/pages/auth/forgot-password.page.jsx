@@ -79,7 +79,7 @@ const PasswordRecoveryPage = () => {
         <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-8 m-4 border-4 border-blue-200">
           <div className="flex items-center justify-center mb-8">
             <img
-              src="/public/logo_mediconsulta_original.png"
+              src="/logo_mediconsulta_original.png"
               alt="Logo MediConsulta"
               className="w-20 h-20 rounded-full border-4 border-blue-500"
             />

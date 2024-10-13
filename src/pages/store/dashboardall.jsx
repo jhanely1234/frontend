@@ -125,7 +125,7 @@ export default function UpdatedHospitalWelcome() {
       <main className="max-w-6xl mx-auto">
         <section className="text-center mb-16 flex flex-col items-center">
           <img
-            src="/public/logo_mediconsulta_original.png"
+            src="/logo_mediconsulta_original.png"
             alt="Logo de Clinica MediConsulta"
             className="w-32 h-32 mb-4"
           />
