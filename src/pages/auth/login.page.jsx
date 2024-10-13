@@ -145,7 +145,7 @@ const LoginPage = () => {
         <div className="bg-white bg-opacity-90 rounded-lg shadow-xl w-full max-w-md p-8 m-4 border-4 border-teal-600">
           <div className="flex items-center justify-center mb-8">
             <img
-              src="/public/logo_mediconsulta_original.png"
+              src="/logo_mediconsulta_original.png"
               alt="Logo Medi Consulta"
               className="w-20 h-20 rounded-full border-4 border-teal-900"
             />
