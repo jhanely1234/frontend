@@ -108,6 +108,9 @@ const LoginPage = () => {
   const handleForgotPassword = () => {
     navigate("/auth/forgot-password");
   };
+  const handleRegisterPacient = () => {
+    navigate("/auth/registro");
+  };
 
   const SocialLinks = () => (
     <div className="space-y-4">
@@ -140,36 +143,37 @@ const LoginPage = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-100 to-teal-100 relative">
-      <div className="absolute inset-0 bg-cover bg-center z-0" style={{backgroundImage: `url('https://i.ibb.co/dDvFjJw/1.png')`}}></div>
+      <div className="absolute inset-0 bg-cover bg-center z-0" style={{ backgroundImage: `url('https://i.ibb.co/dDvFjJw/1.png')` }}></div>
       <div className="flex flex-col md:flex-row items-center justify-center w-full p-4 relative z-10">
-        <div className="bg-white bg-opacity-90 rounded-lg shadow-xl w-full max-w-md p-8 m-4 border-4 border-teal-600">
-          <div className="flex items-center justify-center mb-8">
+        <div className="bg-white bg-opacity-90 rounded-lg shadow-xl w-full max-w-md p-4 sm:p-6 md:p-8 m-4 border-4 border-teal-600">
+          <div className="flex items-center justify-center mb-6 sm:mb-8">
             <img
               src="/logo_mediconsulta_original.png"
               alt="Logo Medi Consulta"
-              className="w-20 h-20 rounded-full border-4 border-teal-900"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-teal-900"
             />
           </div>
-          <h2 className="text-2xl font-semibold text-teal-800 mb-6 text-center">
+          <h2 className="text-xl sm:text-2xl font-semibold text-teal-800 mb-4 sm:mb-6 text-center">
             Iniciar Sesión en Medi Consulta
           </h2>
           <form
             onSubmit={isCodeSent ? handleVerificationSubmit : handleSubmit}
-            className="space-y-6"
+            className="space-y-4 sm:space-y-6"
           >
             {!isCodeSent ? (
               <>
                 <div>
                   <label
+
                     htmlFor="email"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-gray-700 mb-1"
                   >
                     Correo Electrónico
                   </label>
                   <input
                     type="email"
                     id="email"
-                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
                     placeholder="Ingrese su correo electrónico"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -179,15 +183,15 @@ const LoginPage = () => {
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-gray-700 mb-1"
                   >
                     Contraseña
                   </label>
-                  <div className="mt-1 relative">
+                  <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
                       id="password"
-                      className="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
                       placeholder="Ingrese su contraseña"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -217,14 +221,14 @@ const LoginPage = () => {
               <div>
                 <label
                   htmlFor="verificationCode"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
                   Código de Verificación
                 </label>
                 <input
                   type="text"
                   id="verificationCode"
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
                   placeholder="Ingrese el código de verificación"
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
@@ -232,7 +236,7 @@ const LoginPage = () => {
                 />
               </div>
             )}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
               <div className="flex items-center">
                 <input
                   id="remember-me"
@@ -281,21 +285,21 @@ const LoginPage = () => {
             </div>
           </form>
           {!isCodeSent && (
-            <p className="mt-4 text-center text-sm text-gray-600">
-              ¿No puede acceder a su cuenta?{" "}
-              <a
-                href="#"
-                className="font-medium text-teal-600 hover:text-teal-500"
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleRegisterPacient}
+                className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition duration-150 ease-in-out"
               >
-                Contacte a soporte
-              </a>
-            </p>
+                Crear Cuenta
+              </button>
+            </div>
           )}
-          {isMobile && <SocialLinks />}
+          {isMobile && <div className="mt-6"><SocialLinks /></div>}
         </div>
-        <div className="hidden md:block w-full max-w-md p-8 m-4">
-          <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-6 mb-6 border-2 border-teal-900">
-            <h3 className="text-xl font-semibold text-teal-800 mb-4">
+        <div className="hidden md:block w-full max-w-md p-4 sm:p-6 md:p-8 m-4">
+          <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-4 sm:p-6 mb-6 border-2 border-teal-900">
+            <h3 className="text-lg sm:text-xl font-semibold text-teal-800 mb-4">
               Conéctese con Medi Consulta
             </h3>
             <p className="text-sm text-gray-600 mb-4">

@@ -9,7 +9,6 @@ let serverPrimary = `${
 // Crear una instancia de Axios
 const api = axios.create({
   baseURL: serverPrimary,
-  timeout: 5000, // Timeout de las solicitudes a 5 segundos
 });
 
 // Función para verificar la disponibilidad del servidor, considerando el token
@@ -20,7 +19,6 @@ const checkServerAvailability = async (url) => {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      timeout: 1000,
     });
     return true;
   } catch (error) {
@@ -68,7 +66,6 @@ api.interceptors.request.use(
 export const obtenerTodasEspecialidades = async () => {
   try {
     const respuesta = await api.get("/");
-    console.log("respuesta.data", respuesta.data);
     return respuesta.data;
   } catch (error) {
     console.error(

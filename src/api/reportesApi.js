@@ -9,7 +9,6 @@ let currentServer = serverPrimary; // Servidor actual
 // Crear una instancia de Axios
 const api = axios.create({
   baseURL: currentServer,
-  timeout: 5000, // Timeout de las solicitudes a 5 segundos
 });
 
 // Función para verificar la disponibilidad del servidor, considerando el token
@@ -20,7 +19,6 @@ const checkServerAvailability = async (url) => {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      timeout: 1000,
     });
     return true;
   } catch (error) {

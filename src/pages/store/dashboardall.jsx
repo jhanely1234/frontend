@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { obtenerTodasEspecialidades } from '../../api/especialidadesapi';
 import { obtenerMedicosPorEspecialidadCompleto } from '../../api/medicoapi';
-import { Star, Calendar, Phone, Mail, X, User, Award, Clock, MapPin, Stethoscope, Heart, Brain, Bone, Eye, } from 'lucide-react';
+import { Star, Calendar, Phone, Mail, X, User, Award, Clock, Stethoscope, Heart, Brain, Bone, Eye, MapPin, Search, ChevronDown } from 'lucide-react';
 
 export default function UpdatedHospitalWelcome() {
   const [especialidades, setEspecialidades] = useState([]);
@@ -9,10 +9,12 @@ export default function UpdatedHospitalWelcome() {
   const [selectedEspecialidad, setSelectedEspecialidad] = useState(null);
   const [loadingMedicos, setLoadingMedicos] = useState(false);
   const [selectedMedico, setSelectedMedico] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAllEspecialidades, setShowAllEspecialidades] = useState(false);
 
   const hospitalInfo = {
     name: "Clinica MediConsulta",
-    founded: 2019,
+    founded: 2022,
     mission: "Brindar atención médica de calidad con compasión y excelencia.",
   };
 
@@ -50,11 +52,9 @@ export default function UpdatedHospitalWelcome() {
     }
   };
 
-  // Función para agrupar disponibilidades por especialidad
   const renderDisponibilidadPorEspecialidad = (disponibilidades) => {
     const especialidadAgrupada = {};
 
-    // Agrupar disponibilidades por especialidad
     disponibilidades.forEach((disp) => {
       if (!especialidadAgrupada[disp.especialidad]) {
         especialidadAgrupada[disp.especialidad] = [];
@@ -66,7 +66,6 @@ export default function UpdatedHospitalWelcome() {
       const disponibilidadEspecialidad = especialidadAgrupada[especialidadName];
       const turnosAgrupados = {};
 
-      // Agrupar turnos dentro de la especialidad
       disponibilidadEspecialidad.forEach((disp) => {
         const key = `${disp.inicio}-${disp.fin}-${disp.turno}`;
         if (!turnosAgrupados[key]) {
@@ -112,75 +111,98 @@ export default function UpdatedHospitalWelcome() {
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`w-5 h-5 ${i < estrellas ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+            className={`w-4 h-4 ${i < estrellas ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
           />
         ))}
-        <span className="ml-2 text-gray-700">{calificacion}</span>
+        <span className="ml-2 text-sm text-gray-700">{calificacion}</span>
       </div>
     );
   };
 
+  const filteredEspecialidades = especialidades.filter(esp =>
+    esp.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const displayedEspecialidades = showAllEspecialidades ? filteredEspecialidades : filteredEspecialidades.slice(0, 8);
+
   return (
-    <div className="font-sans bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-8">
+    <div className="font-sans bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4 sm:p-8">
       <main className="max-w-6xl mx-auto">
-        <section className="text-center mb-16 flex flex-col items-center">
+        <section className="text-center mb-12 flex flex-col items-center">
           <img
             src="/logo_mediconsulta_original.png"
             alt="Logo de Clinica MediConsulta"
-            className="w-32 h-32 mb-4"
+            className="w-24 h-24 sm:w-32 sm:h-32 mb-4"
           />
-          <h1 className="text-4xl font-bold text-blue-800 mb-4">
+          <h1 className="text-3xl sm:text-4xl font-bold text-blue-800 mb-4">
             {hospitalInfo.name}
           </h1>
-          <p className="text-xl text-indigo-700 max-w-3xl mx-auto">
+          <p className="text-lg sm:text-xl text-indigo-700 max-w-3xl mx-auto">
             Desde {hospitalInfo.founded}, estamos comprometidos con {hospitalInfo.mission}
           </p>
         </section>
 
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold text-blue-800 mb-8 text-center">
+        <section className="mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold text-blue-800 mb-6 text-center">
             Nuestras Especialidades
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {especialidades.length > 0 ? (
-              especialidades.map((especialidad) => {
-                const IconComponent = especialidadIcons[especialidad.name] || especialidadIcons.default;
-                return (
-                  <div
-                    key={especialidad._id}
-                    onClick={() => handleEspecialidadClick(especialidad)}
-                    className="bg-white rounded-xl shadow-lg p-6 cursor-pointer transition duration-300 ease-in-out transform hover:scale-105 hover:bg-blue-50 flex flex-col items-center"
-                  >
-                    <IconComponent className="w-12 h-12 text-blue-600 mb-4" />
-                    <span className="text-lg font-semibold text-blue-700 text-center">
-                      {especialidad.name}
-                    </span>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="col-span-full text-center text-gray-500">Cargando especialidades...</p>
-            )}
+          <div className="mb-4 relative">
+            <input
+              type="text"
+              placeholder="Buscar especialidad..."
+              className="w-full p-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {displayedEspecialidades.map((especialidad) => {
+              const IconComponent = especialidadIcons[especialidad.name] || especialidadIcons.default;
+              return (
+                <div
+                  key={especialidad._id}
+                  onClick={() => handleEspecialidadClick(especialidad)}
+                  className="bg-white rounded-lg shadow-md p-4 cursor-pointer transition duration-300 ease-in-out transform hover:scale-105 hover:bg-blue-50 flex flex-col items-center justify-center"
+                >
+                  <IconComponent className="w-8 h-8 text-blue-600 mb-2" />
+                  <span className="text-sm font-medium text-blue-700 text-center">
+                    {especialidad.name}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          {filteredEspecialidades.length > 8 && (
+            <button
+              onClick={() => setShowAllEspecialidades(!showAllEspecialidades)}
+              className="mt-4 flex items-center justify-center w-full bg-blue-100 text-blue-700 py-2 rounded-lg hover:bg-blue-200 transition duration-300"
+            >
+              {showAllEspecialidades ? 'Mostrar menos' : 'Ver más especialidades'}
+              <ChevronDown className={`ml-2 transform ${showAllEspecialidades ? 'rotate-180' : ''}`} />
+            </button>
+          )}
         </section>
 
         {selectedEspecialidad && (
-          <section className="mb-16">
-            <h3 className="text-3xl font-bold text-blue-800 mb-8 text-center">
+          <section className="mb-12">
+            <h3 className="text-2xl sm:text-3xl font-bold text-blue-800 mb-6 text-center">
               Médicos de {selectedEspecialidad.name}
             </h3>
             {loadingMedicos ? (
-              <p className="text-center text-gray-500">Cargando médicos...</p>
+              <div className="flex justify-center items-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
+              </div>
             ) : medicos.length > 0 ? (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {medicos.map((medico) => (
                   <div
                     key={medico.id}
                     onClick={() => setSelectedMedico(medico)}
-                    className="bg-white rounded-xl shadow-lg p-6 cursor-pointer transition duration-300 ease-in-out transform hover:scale-105 hover:bg-blue-50 flex flex-col items-center"
+                    className="bg-white rounded-lg shadow-md p-4 cursor-pointer transition duration-300 ease-in-out transform hover:scale-105 hover:bg-blue-50 flex flex-col items-center"
                   >
-                    <User className="w-16 h-16 text-blue-600 mb-4" />
-                    <h4 className="text-xl font-bold text-blue-800 mb-2 text-center">
+                    <User className="w-12 h-12 text-blue-600 mb-2" />
+                    <h4 className="text-lg font-semibold text-blue-800 mb-1 text-center">
                       {medico.nombre}
                     </h4>
                     <div className="text-center">
@@ -195,11 +217,11 @@ export default function UpdatedHospitalWelcome() {
           </section>
         )}
 
-        <section className="mb-16">
-          <h3 className="text-3xl font-bold text-blue-800 mb-8 text-center">
+        <section className="mb-12">
+          <h3 className="text-2xl sm:text-3xl font-bold text-blue-800 mb-6 text-center">
             Nuestra Ubicación
           </h3>
-          <div className="rounded-xl overflow-hidden shadow-lg">
+          <div className="rounded-lg overflow-hidden shadow-lg">
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1003.2181956110715!2d-66.28254633017828!3d-17.39314331968396!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x93e30b77af10fe31%3A0x481967dab56c2581!2sJP49%2BP73%2C%20Quillacollo!5e0!3m2!1ses-419!2sbo!4v1726806139378!5m2!1ses-419!2sbo"
               width="100%"
@@ -214,16 +236,16 @@ export default function UpdatedHospitalWelcome() {
       </main>
 
       {selectedMedico && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-2xl p-6 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h4 className="text-2xl font-bold text-blue-800 flex items-center">
-                <User className="w-8 h-8 mr-2 text-blue-600" />
+              <h4 className="text-xl sm:text-2xl font-bold text-blue-800 flex items-center">
+                <User className="w-6 h-6 sm:w-8 sm:h-8 mr-2 text-blue-600" />
                 {selectedMedico.nombre}
               </h4>
               <button
                 onClick={() => setSelectedMedico(null)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 transition duration-300"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -256,6 +278,7 @@ export default function UpdatedHospitalWelcome() {
               <div>
                 <span className="font-medium text-gray-700 flex items-center">
                   <Star className="w-5 h-5 mr-2 text-blue-500" />
+
                   Calificación:
                 </span>
                 <div className="mt-1">

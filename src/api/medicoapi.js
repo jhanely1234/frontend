@@ -89,7 +89,6 @@ export const obtenerTodosMedicos = async () => {
 export const obtenerMedicoPorId = async (id) => {
   try {
     const respuesta = await api.get(`/${id}`);
-    console.log("Respuesta:", respuesta.data);
     return respuesta.data;
   } catch (error) {
     toast.error(error.response?.data?.message || "Error al obtener el médico", {
@@ -107,7 +106,6 @@ export const obtenerMedicoPorId = async (id) => {
 export const obtenerMedicoPorId2 = async (id) => {
   try {
     const respuesta = await api.get(`/datos/${id}`);
-    console.log("Respuesta:", respuesta.data);
     return respuesta.data;
   } catch (error) {
     toast.error(error.response?.data?.message || "Error al obtener el médico", {
@@ -252,7 +250,6 @@ export const obtenerMedicosPorEspecialidadCompleto = async (id) => {
 export const obtenerEspecialidadesPorMedico = async (medicoId) => {
   try {
     const respuesta = await api.get(`/medicos/${medicoId}/especialidades`);
-    console.log("Respuesta:", respuesta.data);
     return respuesta.data;
   } catch (error) {
     toast.error(

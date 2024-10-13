@@ -11,7 +11,6 @@ let currentServer = serverPrimary; // Servidor actual
 // Crear una instancia de Axios para el historial
 const api = axios.create({
   baseURL: serverPrimary,
-  timeout: 5000, // Timeout de las solicitudes a 5 segundos
 });
 
 // Crear una instancia de Axios específica para crear consulta
@@ -28,7 +27,6 @@ const checkServerAvailability = async (url) => {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      timeout: 1000, // Timeout corto para prueba rápida de disponibilidad
     });
     return true;
   } catch (error) {
@@ -113,7 +111,6 @@ export const obtenerHistorialPorPaciente = async (pacienteId) => {
 export const crearConsulta = async (consulta) => {
   try {
     const response = await apiConsulta.post("/create", consulta);
-    console.log("Consulta creada con éxito:", response.data.message);
     return response.data;
   } catch (error) {
     console.error(
