@@ -143,7 +143,7 @@ const LoginPage = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-100 to-teal-100 relative">
-      <div className="absolute inset-0 bg-cover bg-center z-0" style={{ backgroundImage: `url('https://i.ibb.co/dDvFjJw/1.png')` }}></div>
+      <div className="absolute inset-0 bg-cover bg-center z-0" style={{ backgroundImage: `url('/fondo.png')` }}></div>
       <div className="flex flex-col md:flex-row items-center justify-center w-full p-4 relative z-10">
         <div className="bg-white bg-opacity-90 rounded-lg shadow-xl w-full max-w-md p-4 sm:p-6 md:p-8 m-4 border-4 border-teal-600">
           <div className="flex items-center justify-center mb-6 sm:mb-8">
