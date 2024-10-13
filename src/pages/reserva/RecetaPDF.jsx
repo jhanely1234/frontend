@@ -109,17 +109,17 @@ const InfoItem = ({ label, value }) => (
   </View>
 );
 
-export default function PrescriptionPDF({ 
-  doctorName, 
-  doctorCredentials, 
-  patientName, 
+export default function PrescriptionPDF({
+  doctorName,
+  doctorCredentials,
+  patientName,
   patientAge,
-  patientPhone, 
-  date, 
-  weight, 
+  patientPhone,
+  date,
+  weight,
   height,
-  fc, 
-  fr, 
+  fc,
+  fr,
   temp,
   logoUrl,
   prescriptionText,
@@ -129,7 +129,7 @@ export default function PrescriptionPDF({
 }) {
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size={{ width: 396, height: 612 }} style={styles.page}>
         <View style={styles.header}>
           <Image src={logoUrl} style={styles.logo} />
           <View style={styles.doctorInfo}>
@@ -146,23 +146,7 @@ export default function PrescriptionPDF({
           <InfoItem label="Fecha" value={date} />
         </View>
 
-        <Text style={styles.sectionTitle}>Signos Vitales</Text>
-        <View style={styles.infoGrid}>
-          <InfoItem label="Peso" value={weight} />
-          <InfoItem label="Talla" value={height} />
-          <InfoItem label="F.C." value={fc} />
-          <InfoItem label="F.R." value={fr} />
-          <InfoItem label="Temp." value={temp} />
-        </View>
 
-        <Text style={styles.sectionTitle}>Motivo de Consulta</Text>
-        <Text style={styles.value}>{consultReason}</Text>
-
-        <Text style={styles.sectionTitle}>Examen Físico</Text>
-        <Text style={styles.value}>{physicalExam}</Text>
-
-        <Text style={styles.sectionTitle}>Diagnóstico</Text>
-        <Text style={styles.value}>{diagnosis}</Text>
 
         <Text style={styles.sectionTitle}>Receta</Text>
         <View style={styles.prescriptionArea}>
