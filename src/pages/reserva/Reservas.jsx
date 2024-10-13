@@ -683,39 +683,37 @@ export default function Reservas() {
       )}
 
       {viewReceta && consultaDetalles && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col">
-            <div className="p-4 sm:p-6 flex-shrink-0 border-b border-gray-200">
-              <h2 className="text-xl sm:text-2xl font-bold text-blue-800">
-                Receta Médica
-              </h2>
-            </div>
-            <div className="flex-grow p-2 sm:p-4 overflow-hidden">
-              <PDFViewer width="100%" height="100%" className="rounded-md shadow-inner">
-                <PrescriptionPDF
-                  doctorName={`${consultaDetalles.medico.name} ${consultaDetalles.medico.lastname}`}
-                  doctorCredentials={consultaDetalles.especialidad}
-                  patientName={consultaDetalles.paciente.nombre}
-                  patientAge={consultaDetalles.paciente.edad}
-                  patientPhone={consultaDetalles.paciente.telefono.toString()}
-                  date={new Date(consultaDetalles.fechaConsulta).toLocaleDateString()}
-                  weight={consultaDetalles.signos_vitales[0]?.peso || "N/A"}
-                  height={consultaDetalles.signos_vitales[0]?.talla || "N/A"}
-                  fc={consultaDetalles.signos_vitales[0]?.Fc || "N/A"}
-                  fr={consultaDetalles.signos_vitales[0]?.Fr || "N/A"}
-                  temp={consultaDetalles.signos_vitales[0]?.Temperatura || "N/A"}
-                  logoUrl="/public/logo_mediconsulta_original.png"
-                  prescriptionText={consultaDetalles.receta}
-                  diagnosis={consultaDetalles.diagnostico}
-                  physicalExam={consultaDetalles.examen_fisico}
-                  consultReason={consultaDetalles.motivo_consulta}
-                />
-              </PDFViewer>
-            </div>
-            <div className="p-4 sm:p-6 flex-shrink-0 border-t border-gray-200">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-4xl h-5/6">
+            <h2 className="text-2xl font-bold mb-4 text-blue-800">
+              Receta Médica
+            </h2>
+            <PDFViewer width="100%" height="100%">
+              <PrescriptionPDF
+                doctorName={`${consultaDetalles.medico.name} ${consultaDetalles.medico.lastname}`}
+                doctorCredentials={consultaDetalles.especialidad}
+                patientName={consultaDetalles.paciente.nombre}
+                patientAge={consultaDetalles.paciente.edad}
+                patientPhone={consultaDetalles.paciente.telefono.toString()}
+                date={new Date(
+                  consultaDetalles.fechaConsulta
+                ).toLocaleDateString()}
+                weight={consultaDetalles.signos_vitales[0]?.peso || "N/A"}
+                height={consultaDetalles.signos_vitales[0]?.talla || "N/A"}
+                fc={consultaDetalles.signos_vitales[0]?.Fc || "N/A"}
+                fr={consultaDetalles.signos_vitales[0]?.Fr || "N/A"}
+                temp={consultaDetalles.signos_vitales[0]?.Temperatura || "N/A"}
+                logoUrl="/public/logo_mediconsulta_original.png"
+                prescriptionText={consultaDetalles.receta}
+                diagnosis={consultaDetalles.diagnostico}
+                physicalExam={consultaDetalles.examen_fisico}
+                consultReason={consultaDetalles.motivo_consulta}
+              />
+            </PDFViewer>
+            <div className="mt-6 space-y-2">
               <button
                 onClick={() => setViewReceta(false)}
-                className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition duration-300 ease-in-out w-full sm:w-auto"
+                className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300 ease-in-out w-full"
               >
                 Cerrar
               </button>

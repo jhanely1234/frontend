@@ -2,7 +2,6 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import AuthLayout from "./layouts/auth.layout";
 import Wrapper from "./layouts/Wrapper";
-import Receta from "./pages/receta/receta";
 import Reportes from "./pages/reportes/ReporteConsultas";
 import LoginPage from "./pages/auth/login.page";
 import RegisterPage from "./pages/auth/register.page";
@@ -270,15 +269,6 @@ const App = () => {
             />
 
           </Route>
-          <Route
-            path="receta"
-            element={
-              <PrivateRoute
-                element={Receta}
-                allowedRoles={["admin", "medico", "recepcionista", "paciente"]}
-              />
-            }
-          />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

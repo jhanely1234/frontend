@@ -5,7 +5,7 @@ import {
   obtenerMedicoPorId,
   eliminarMedico
 } from "../../api/medicoapi";
-import { FiEye, FiTrash, FiFilter, FiX, FiCalendar, FiClock } from "react-icons/fi";
+import { FiEye, FiTrash, FiFilter, FiX, FiCalendar, FiClock, FiList, FiGrid } from "react-icons/fi";
 import { BsPencil } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/auth.hook";
@@ -22,6 +22,7 @@ export default function Component() {
   const [minEdad, setMinEdad] = useState('');
   const [maxEdad, setMaxEdad] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState('cards'); // New state for view mode
   const navigate = useNavigate();
   const {
     auth: { roles },
@@ -84,18 +85,71 @@ export default function Component() {
   const filteredMedicos = medicos.filter((medico) => {
     return (
       (searchName === '' || `${medico.name} ${medico.lastname}`.toLowerCase().includes(searchName.toLowerCase())) &&
-      (searchEspecialidad === '' || medico.especialidades.some(especialidad => especialidad.toLowerCase().includes(searchEspecialidad.toLowerCase()))) &&
+      (searchEspecialidad === '' || medico.especialidades.some(especialidad => especialidad.name.toLowerCase().includes(searchEspecialidad.toLowerCase()))) &&
       (searchGenero === '' || medico.genero.toLowerCase() === searchGenero.toLowerCase()) &&
       (minEdad === '' || medico.edad >= parseInt(minEdad)) &&
       (maxEdad === '' || medico.edad <= parseInt(maxEdad))
     );
   });
 
+  const TableView = () => (
+    <div className="overflow-x-auto">
+      <table className="min-w-full bg-white">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="py-3 px-6 text-left">Nombre</th>
+            <th className="py-3 px-6 text-left">Especialidades</th>
+            <th className="py-3 px-6 text-left">Email</th>
+            <th className="py-3 px-6 text-left">Teléfono</th>
+            <th className="py-3 px-6 text-left">Edad</th>
+            <th className="py-3 px-6 text-left">Acciones</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {filteredMedicos.map((medico) => (
+            <tr key={medico._id} className="hover:bg-gray-50">
+              <td className="py-4 px-6">{medico.name} {medico.lastname}</td>
+              <td className="py-4 px-6">{medico.especialidades.join(", ")}</td>
+              <td className="py-4 px-6">{medico.email}</td>
+              <td className="py-4 px-6">{medico.telefono}</td>
+              <td className="py-4 px-6">{medico.edad}</td>
+              <td className="py-4 px-6">
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleViewProfile(medico._id)}
+                    className="text-blue-600 hover:text-blue-800 transition duration-300"
+                    aria-label="Ver perfil"
+                  >
+                    <FiEye size={20} />
+                  </button>
+                  <button
+                    onClick={() => handleEditProfile(medico._id)}
+                    className="text-green-600 hover:text-green-800 transition duration-300"
+                    aria-label="Editar perfil"
+                  >
+                    <BsPencil size={20} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteMedico(medico._id)}
+                    className="text-red-600 hover:text-red-800 transition duration-300"
+                    aria-label="Eliminar médico"
+                  >
+                    <FiTrash size={20} />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
   return (
     <div className="bg-gray-100 min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl md:text-4xl font-bold mb-8 text-gray-800">Directorio de Médicos</h1>
-        
+
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           {canAddMedico && (
             <Link
@@ -119,6 +173,13 @@ export default function Component() {
             >
               <FiX className="mr-2" />
               Resetear Filtros
+            </button>
+            <button
+              onClick={() => setViewMode(viewMode === 'cards' ? 'table' : 'cards')}
+              className="bg-white text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-100 transition duration-300 flex items-center shadow-md text-sm md:text-base"
+            >
+              {viewMode === 'cards' ? <FiList className="mr-2" /> : <FiGrid className="mr-2" />}
+              {viewMode === 'cards' ? 'Vista de Tabla' : 'Vista de Tarjetas'}
             </button>
           </div>
         </div>
@@ -168,147 +229,151 @@ export default function Component() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMedicos.map((medico) => (
-            <div key={medico._id} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105">
-              <div className="p-6">
-                <div className="flex items-center mb-4">
-                  <img
-                    src={`https://api.dicebear.com/6.x/initials/svg?seed=${medico.name} ${medico.lastname}`}
-                    alt={`${medico.name} ${medico.lastname}`}
-                    className="w-16 h-16 rounded-full mr-4"
-                  />
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-800">{medico.name} {medico.lastname}</h2>
-                    <p className="text-sm text-gray-600">{medico.especialidades.join(", ")}</p>
+        {viewMode === 'cards' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMedicos.map((medico) => (
+              <div key={medico._id} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105">
+                <div className="p-6">
+                  <div className="flex items-center mb-4">
+                    <img
+                      src={`https://api.dicebear.com/6.x/initials/svg?seed=${medico.name} ${medico.lastname}`}
+                      alt={`${medico.name} ${medico.lastname}`}
+                      className="w-16 h-16 rounded-full mr-4"
+                    />
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-800">{medico.name} {medico.lastname}</h2>
+                      <p className="text-sm text-gray-600">{medico.especialidades.join(", ")}</p>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600"><span className="font-medium">Email:</span> {medico.email}</p>
+                    <p className="text-sm text-gray-600"><span className="font-medium">Teléfono:</span> {medico.telefono}</p>
+                    <p className="text-sm text-gray-600"><span className="font-medium">Edad:</span> {medico.edad} años</p>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      onClick={() => handleViewProfile(medico._id)}
+                      className="text-blue-600 hover:text-blue-800 transition duration-300"
+                      aria-label="Ver perfil"
+                    >
+                      <FiEye size={20} />
+                    </button>
+                    <button
+                      onClick={() => handleEditProfile(medico._id)}
+                      className="text-green-600 hover:text-green-800 transition duration-300"
+                      aria-label="Editar perfil"
+                    >
+                      <BsPencil size={20} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMedico(medico._id)}
+                      className="text-red-600 hover:text-red-800 transition duration-300"
+                      aria-label="Eliminar médico"
+                    >
+                      <FiTrash size={20} />
+                    </button>
                   </div>
                 </div>
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600"><span className="font-medium">Email:</span> {medico.email}</p>
-                  <p className="text-sm text-gray-600"><span className="font-medium">Teléfono:</span> {medico.telefono}</p>
-                  <p className="text-sm text-gray-600"><span className="font-medium">Edad:</span> {medico.edad} años</p>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => handleViewProfile(medico._id)}
-                    className="text-blue-600 hover:text-blue-800 transition duration-300"
-                    aria-label="Ver perfil"
-                  >
-                    <FiEye size={20} />
-                  </button>
-                  <button
-                    onClick={() => handleEditProfile(medico._id)}
-                    className="text-green-600 hover:text-green-800 transition duration-300"
-                    aria-label="Editar perfil"
-                  >
-                    <BsPencil size={20} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteMedico(medico._id)}
-                    className="text-red-600 hover:text-red-800 transition duration-300"
-                    aria-label="Eliminar médico"
-                  >
-                    <FiTrash size={20} />
-                  </button>
-                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <TableView />
+        )}
       </div>
 
       <Modal
-  isOpen={viewProfile}
-  onRequestClose={() => setViewProfile(false)}
-  contentLabel="Ver Perfil"
-  className="fixed inset-0 flex items-center justify-center p-4"
-  overlayClassName="fixed inset-0 bg-black bg-opacity-75"
->
-  <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-    <div className="flex justify-between items-center p-6 bg-gray-100 border-b">
-      <h2 className="text-3xl font-bold text-gray-800">Perfil del Médico</h2>
-      <button
-        onClick={() => setViewProfile(false)}
-        className="text-gray-500 hover:text-gray-700 transition duration-150 ease-in-out"
+        isOpen={viewProfile}
+        onRequestClose={() => setViewProfile(false)}
+        contentLabel="Ver Perfil"
+        className="fixed inset-0 flex items-center justify-center p-4"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-75"
       >
-        <FiX size={24} />
-      </button>
-    </div>
-    {selectedMedico && (
-      <div className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar">
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="md:w-1/3">
-            <img
-              src={`https://api.dicebear.com/6.x/initials/svg?seed=${selectedMedico.name} ${selectedMedico.lastname}`}
-              alt={`${selectedMedico.name} ${selectedMedico.lastname}`}
-              className="w-full h-auto rounded-lg shadow-md"
-            />
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="flex justify-between items-center p-6 bg-gray-100 border-b">
+            <h2 className="text-3xl font-bold text-gray-800">Perfil del Médico</h2>
+            <button
+              onClick={() => setViewProfile(false)}
+              className="text-gray-500 hover:text-gray-700 transition duration-150 ease-in-out"
+            >
+              <FiX size={24} />
+            </button>
           </div>
-          <div className="md:w-2/3">
-            <h3 className="text-2xl font-semibold text-gray-800 mb-4">
-              Información Personal
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <p className="text-gray-700">
-                <span className="font-medium">Nombre:</span> {selectedMedico.name} {selectedMedico.lastname}
-              </p>
-              <p className="text-gray-700">
-                <span className="font-medium">Email:</span> {selectedMedico.email}
-              </p>
-              <p className="text-gray-700">
-                <span className="font-medium">Teléfono:</span> {selectedMedico.telefono}
-              </p>
-              <p className="text-gray-700">
-                <span className="font-medium">CI:</span> {selectedMedico.ci}
-              </p>
-              <p className="text-gray-700">
-                <span className="font-medium">Género:</span> {selectedMedico.genero}
-              </p>
-              <p className="text-gray-700">
-                <span className="font-medium">Fecha de Nacimiento:</span> {new Date(selectedMedico.fechaNacimiento).toLocaleDateString()}
-              </p>
-              <p className="text-gray-700">
-                <span className="font-medium">Edad:</span> {selectedMedico.edad} años
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="mt-6">
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">Especialidades</h3>
-          <div className="flex flex-wrap gap-2 mb-6">
-            {selectedMedico.especialidades.map((especialidad, index) => (
-              <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                {especialidad.name} {/* Acceder al campo 'name' */}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="mt-6">
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">Disponibilidad</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {selectedMedico.disponibilidades.map((disp, index) => (
-              <div key={index} className="bg-gray-50 p-4 rounded-lg shadow">
-                <h4 className="font-semibold text-gray-700 mb-2">{disp.dia}</h4>
-                <p className="text-gray-600 flex items-center">
-                  <FiClock className="mr-2" />
-                  {disp.inicio} - {disp.fin}
-                </p>
-                <p className="text-gray-600 flex items-center">
-                  <FiCalendar className="mr-2" />
-                  Turno: {disp.turno}
-                </p>
-                <p className="text-gray-600 mt-2">
-                  <span className="font-medium">Especialidad:</span> {disp.especialidad.name} {/* Acceder a 'name' */}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )}
-  </div>
-</Modal>
+          {selectedMedico && (
+            <div className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar">
+              <div className="flex flex-col md:flex-row gap-6">
 
+                <div className="md:w-1/3">
+                  <img
+                    src={`https://api.dicebear.com/6.x/initials/svg?seed=${selectedMedico.name} ${selectedMedico.lastname}`}
+                    alt={`${selectedMedico.name} ${selectedMedico.lastname}`}
+                    className="w-full h-auto rounded-lg shadow-md"
+                  />
+                </div>
+                <div className="md:w-2/3">
+                  <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+                    Información Personal
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <p className="text-gray-700">
+                      <span className="font-medium">Nombre:</span> {selectedMedico.name} {selectedMedico.lastname}
+                    </p>
+                    <p className="text-gray-700">
+                      <span className="font-medium">Email:</span> {selectedMedico.email}
+                    </p>
+                    <p className="text-gray-700">
+                      <span className="font-medium">Teléfono:</span> {selectedMedico.telefono}
+                    </p>
+                    <p className="text-gray-700">
+                      <span className="font-medium">CI:</span> {selectedMedico.ci}
+                    </p>
+                    <p className="text-gray-700">
+                      <span className="font-medium">Género:</span> {selectedMedico.genero}
+                    </p>
+                    <p className="text-gray-700">
+                      <span className="font-medium">Fecha de Nacimiento:</span> {new Date(selectedMedico.fechaNacimiento).toLocaleDateString()}
+                    </p>
+                    <p className="text-gray-700">
+                      <span className="font-medium">Edad:</span> {selectedMedico.edad} años
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6">
+                <h3 className="text-2xl font-semibold text-gray-800 mb-4">Especialidades</h3>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {selectedMedico.especialidades.map((especialidad, index) => (
+                    <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                      {especialidad.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-6">
+                <h3 className="text-2xl font-semibold text-gray-800 mb-4">Disponibilidad</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {selectedMedico.disponibilidades.map((disp, index) => (
+                    <div key={index} className="bg-gray-50 p-4 rounded-lg shadow">
+                      <h4 className="font-semibold text-gray-700 mb-2">{disp.dia}</h4>
+                      <p className="text-gray-600 flex items-center">
+                        <FiClock className="mr-2" />
+                        {disp.inicio} - {disp.fin}
+                      </p>
+                      <p className="text-gray-600 flex items-center">
+                        <FiCalendar className="mr-2" />
+                        Turno: {disp.turno}
+                      </p>
+                      <p className="text-gray-600 mt-2">
+                        <span className="font-medium">Especialidad:</span> {disp.especialidad.name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

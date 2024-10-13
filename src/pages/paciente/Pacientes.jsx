@@ -1,80 +1,71 @@
-'use client'
-
-import React, { useEffect, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { Eye, Edit, Trash2, BookOpen, Search, User, CreditCard, Calendar, Phone, Users, Plus, X, Filter, ChevronDown, ChevronUp, RefreshCw } from "lucide-react"
-import { obtenerTodosPacientes, obtenerPacientePorId, eliminarPaciente } from "../../api/pacienteapi"
-import useAuth from "../../hooks/auth.hook"
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, Edit, Trash2, BookOpen, Search, User, CreditCard, Calendar, Phone, Users, Plus, X, Filter, ChevronDown, ChevronUp, RefreshCw, List, Grid } from "lucide-react";
+import { obtenerTodosPacientes, obtenerPacientePorId, eliminarPaciente } from "../../api/pacienteapi";
+import useAuth from "../../hooks/auth.hook";
 
 export default function Pacientes() {
-  const [pacientes, setPacientes] = useState([])
-  const [viewProfile, setViewProfile] = useState(false)
-  const [selectedPaciente, setSelectedPaciente] = useState(null)
+  const [pacientes, setPacientes] = useState([]);
+  const [viewProfile, setViewProfile] = useState(false);
+  const [selectedPaciente, setSelectedPaciente] = useState(null);
   const [filters, setFilters] = useState({
     name: "",
     ci: "",
     sexo: "",
     minEdad: "",
     maxEdad: ""
-  })
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-  const navigate = useNavigate()
-  const { auth: { roles } } = useAuth()
+  });
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('cards');
+  const navigate = useNavigate();
+  const { auth: { roles } } = useAuth();
 
   useEffect(() => {
     const fetchPacientes = async () => {
       try {
-        const data = await obtenerTodosPacientes()
-        setPacientes(data)
+        const data = await obtenerTodosPacientes();
+        setPacientes(data);
       } catch (error) {
-        console.error("Error fetching pacientes:", error)
+        console.error("Error fetching pacientes:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
-    fetchPacientes()
-
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    };
+    fetchPacientes();
+  }, []);
 
   const handleViewProfile = async (id) => {
     try {
-      const paciente = await obtenerPacientePorId(id)
-      setSelectedPaciente(paciente)
-      setViewProfile(true)
+      const paciente = await obtenerPacientePorId(id);
+      setSelectedPaciente(paciente);
+      setViewProfile(true);
     } catch (error) {
-      console.error("Error fetching paciente:", error)
+      console.error("Error fetching paciente:", error);
     }
-  }
+  };
 
   const handleEditProfile = (id) => {
-    navigate(`/paciente/editar/${id}`)
-  }
+    navigate(`/paciente/editar/${id}`);
+  };
 
   const handleDeletePaciente = async (id) => {
     try {
-      await eliminarPaciente(id)
-      setPacientes(pacientes.filter((paciente) => paciente._id !== id))
+      await eliminarPaciente(id);
+      setPacientes(pacientes.filter((paciente) => paciente._id !== id));
     } catch (error) {
-      console.error("Error deleting paciente:", error)
+      console.error("Error deleting paciente:", error);
     }
-  }
+  };
 
   const handleViewHistorial = (pacienteId) => {
-    navigate(`/paciente/historial/${pacienteId}`)
-  }
+    navigate(`/paciente/historial/${pacienteId}`);
+  };
 
   const handleFilterChange = (e) => {
-    const { name, value } = e.target
-    setFilters((prev) => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
 
   const clearFilters = () => {
     setFilters({
@@ -83,11 +74,11 @@ export default function Pacientes() {
       sexo: "",
       minEdad: "",
       maxEdad: ""
-    })
-  }
+    });
+  };
 
-  const canAddPatient = roles.some((role) => ["admin", "recepcionista"].includes(role.name))
-  const canEditPatient = roles.some((role) => ["admin", "recepcionista"].includes(role.name))
+  const canAddPatient = roles.some((role) => ["admin", "recepcionista"].includes(role.name));
+  const canEditPatient = roles.some((role) => ["admin", "recepcionista"].includes(role.name));
 
   const filteredPacientes = pacientes.filter((paciente) => {
     return (
@@ -96,200 +87,236 @@ export default function Pacientes() {
       (filters.sexo === "" || paciente.genero.toLowerCase() === filters.sexo.toLowerCase()) &&
       (filters.minEdad === "" || paciente.edad >= parseInt(filters.minEdad)) &&
       (filters.maxEdad === "" || paciente.edad <= parseInt(filters.maxEdad))
-    )
-  })
+    );
+  });
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="p-4 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">Lista de Pacientes</h1>
+    <div className="bg-gray-100 min-h-screen p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl md:text-4xl font-bold mb-8 text-gray-800">Lista de Pacientes</h1>
 
-      <div className="mb-6 flex flex-wrap gap-4 items-center justify-between">
-        {canAddPatient && (
-          <Link to="/paciente/nuevo" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center transition duration-300 shadow-md">
-            <Plus className="mr-2" size={20} />
-            Agregar Nuevo Paciente
-          </Link>
-        )}
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 flex items-center transition duration-300"
-          >
-            <Filter className="mr-2" size={20} />
-            Filtros
-            {isFilterOpen ? <ChevronUp className="ml-2" size={20} /> : <ChevronDown className="ml-2" size={20} />}
-          </button>
-          <button
-            onClick={clearFilters}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 flex items-center transition duration-300"
-          >
-            <RefreshCw className="mr-2" size={20} />
-            Borrar Filtros
-          </button>
-        </div>
-      </div>
-
-      {isFilterOpen && (
-        <div className="mb-6 p-4 bg-white rounded-lg shadow-md">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Buscar por nombre"
-                name="name"
-                value={filters.name}
-                onChange={handleFilterChange}
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            </div>
-            <input
-              type="text"
-              placeholder="Buscar por CI"
-              name="ci"
-              value={filters.ci}
-              onChange={handleFilterChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <select
-              name="sexo"
-              value={filters.sexo}
-              onChange={handleFilterChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          {canAddPatient && (
+            <Link
+              to="/paciente/nuevo"
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md text-sm md:text-base flex items-center"
             >
-              <option value="">Todos los sexos</option>
-              <option value="Masculino">Masculino</option>
-              <option value="Femenino">Femenino</option>
-            </select>
-            <input
-              type="number"
-              placeholder="Edad mínima"
-              name="minEdad"
-              value={filters.minEdad}
-              onChange={handleFilterChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="number"
-              placeholder="Edad máxima"
-              name="maxEdad"
-              value={filters.maxEdad}
-              onChange={handleFilterChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+              <Plus className="mr-2" size={20} />
+              Agregar Nuevo Paciente
+            </Link>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className="bg-white text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-100 transition duration-300 flex items-center shadow-md text-sm md:text-base"
+            >
+              <Filter className="mr-2" size={20} />
+              {isFilterOpen ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+            </button>
+            <button
+              onClick={clearFilters}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300 flex items-center shadow-md text-sm md:text-base"
+            >
+              <RefreshCw className="mr-2" size={20} />
+              Borrar Filtros
+            </button>
+            <button
+              onClick={() => setViewMode(viewMode === 'cards' ? 'table' : 'cards')}
+              className="bg-white text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-100 transition duration-300 flex items-center shadow-md text-sm md:text-base"
+            >
+              {viewMode === 'cards' ? <List className="mr-2" size={20} /> : <Grid className="mr-2" size={20} />}
+              {viewMode === 'cards' ? 'Vista de Tabla' : 'Vista de Tarjetas'}
+            </button>
           </div>
         </div>
-      )}
 
-      {!isMobile ? (
-        <div className="overflow-x-auto">
-          <table className="w-full bg-white shadow-md rounded-lg">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CI</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edad</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sexo</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredPacientes.map((paciente) => (
-                <tr key={paciente._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{paciente.name} {paciente.lastname}</div>
-                      </div>
+        {isFilterOpen && (
+          <div className="mb-8 p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4 text-gray-700">Filtros de Búsqueda</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre"
+                  name="name"
+                  value={filters.name}
+                  onChange={handleFilterChange}
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar por CI"
+                name="ci"
+                value={filters.ci}
+                onChange={handleFilterChange}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <select
+                name="sexo"
+                value={filters.sexo}
+                onChange={handleFilterChange}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Todos los sexos</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Femenino">Femenino</option>
+              </select>
+              <input
+                type="number"
+                placeholder="Edad mínima"
+                name="minEdad"
+                value={filters.minEdad}
+                onChange={handleFilterChange}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="number"
+                placeholder="Edad máxima"
+                name="maxEdad"
+                value={filters.maxEdad}
+                onChange={handleFilterChange}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        )}
+
+        {viewMode === 'cards' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredPacientes.map((paciente) => (
+              <div key={paciente._id} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105">
+                <div className="p-6">
+                  <div className="flex items-center mb-4">
+                    <img
+                      src={`https://api.dicebear.com/6.x/initials/svg?seed=${paciente.name} ${paciente.lastname}`}
+                      alt={`${paciente.name} ${paciente.lastname}`}
+                      className="w-16 h-16 rounded-full mr-4"
+                    />
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-800">{paciente.name} {paciente.lastname}</h2>
+                      <p className="text-sm text-gray-600">{paciente.email}</p>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{paciente.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{paciente.ci}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{paciente.edad}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{paciente.telefono}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{paciente.genero}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onClick={() => handleViewProfile(paciente._id)} className="text-blue-600 hover:text-blue-900 mr-2">
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600"><span className="font-medium">CI:</span> {paciente.ci}</p>
+                    <p className="text-sm text-gray-600"><span className="font-medium">Teléfono:</span> {paciente.telefono}</p>
+                    <p className="text-sm text-gray-600"><span className="font-medium">Edad:</span> {paciente.edad} años</p>
+                    <p className="text-sm text-gray-600"><span className="font-medium">Sexo:</span> {paciente.genero}</p>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      onClick={() => handleViewProfile(paciente._id)}
+                      className="text-blue-600 hover:text-blue-800 transition duration-300"
+                      aria-label="Ver perfil"
+                    >
                       <Eye size={20} />
                     </button>
                     {canEditPatient && (
-                      <button onClick={() => handleEditProfile(paciente._id)} className="text-green-600 hover:text-green-900 mr-2">
+                      <button
+                        onClick={() => handleEditProfile(paciente._id)}
+                        className="text-green-600 hover:text-green-800 transition duration-300"
+                        aria-label="Editar perfil"
+                      >
                         <Edit size={20} />
                       </button>
                     )}
                     {canAddPatient && (
-                      <button onClick={() => handleDeletePaciente(paciente._id)} className="text-red-600 hover:text-red-900 mr-2">
+                      <button
+                        onClick={() => handleDeletePaciente(paciente._id)}
+                        className="text-red-600 hover:text-red-800 transition duration-300"
+                        aria-label="Eliminar paciente"
+                      >
                         <Trash2 size={20} />
                       </button>
                     )}
-                    <button onClick={() => handleViewHistorial(paciente._id)} className="text-purple-600 hover:text-purple-900">
+                    <button
+                      onClick={() => handleViewHistorial(paciente._id)}
+                      className="text-purple-600 hover:text-purple-800 transition duration-300"
+                      aria-label="Ver historial"
+                    >
                       <BookOpen size={20} />
                     </button>
-                  </td>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="py-3 px-6 text-left">Nombre</th>
+                  <th className="py-3 px-6 text-left">Email</th>
+                  <th className="py-3 px-6 text-left">CI</th>
+                  <th className="py-3 px-6 text-left">Teléfono</th>
+                  <th className="py-3 px-6 text-left">Edad</th>
+                  <th className="py-3 px-6 text-left">Sexo</th>
+                  <th className="py-3 px-6 text-left">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {filteredPacientes.map((paciente) => (
-            <div key={paciente._id} className="bg-white shadow-md rounded-lg p-4">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="text-lg font-semibold">{paciente.name} {paciente.lastname}</h3>
-                  <p className="text-sm text-gray-600">{paciente.email}</p>
-                </div>
-                <div className="flex space-x-2">
-                  <button onClick={() => handleViewProfile(paciente._id)} className="text-blue-600">
-                    <Eye size={20} />
-                  </button>
-                  {canEditPatient && (
-                    <button onClick={() => handleEditProfile(paciente._id)} className="text-green-600">
-                      <Edit size={20} />
-                    </button>
-                  )}
-                  {canAddPatient && (
-                    <button onClick={() => handleDeletePaciente(paciente._id)} className="text-red-600">
-                      <Trash2 size={20} />
-                    </button>
-                  )}
-                  <button onClick={() => handleViewHistorial(paciente._id)} className="text-purple-600">
-                    <BookOpen size={20} />
-                  </button>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div><span className="font-semibold">CI:</span> {paciente.ci}</div>
-                <div><span className="font-semibold">Edad:</span> {paciente.edad}</div>
-                <div><span className="font-semibold">Teléfono:</span> {paciente.telefono}</div>
-                <div><span className="font-semibold">Sexo:</span> {paciente.genero}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredPacientes.map((paciente) => (
+                  <tr key={paciente._id} className="hover:bg-gray-50">
+                    <td className="py-4 px-6">{paciente.name} {paciente.lastname}</td>
+                    <td className="py-4 px-6">{paciente.email}</td>
+                    <td className="py-4 px-6">{paciente.ci}</td>
+                    <td className="py-4 px-6">{paciente.telefono}</td>
+                    <td className="py-4 px-6">{paciente.edad}</td>
+                    <td className="py-4 px-6">{paciente.genero}</td>
+                    <td className="py-4 px-6">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleViewProfile(paciente._id)}
+                          className="text-blue-600 hover:text-blue-800 transition duration-300"
+                          aria-label="Ver perfil"
+                        >
+                          <Eye size={20} />
+                        </button>
+                        {canEditPatient && (
+                          <button
+                            onClick={() => handleEditProfile(paciente._id)}
+                            className="text-green-600 hover:text-green-800 transition duration-300"
+                            aria-label="Editar perfil"
+                          >
+                            <Edit size={20} />
+                          </button>
+                        )}
+                        {canAddPatient && (
+                          <button
+                            onClick={() => handleDeletePaciente(paciente._id)}
+                            className="text-red-600 hover:text-red-800 transition duration-300"
+                            aria-label="Eliminar paciente"
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleViewHistorial(paciente._id)}
+                          className="text-purple-600 hover:text-purple-800 transition  duration-300"
+                          aria-label="Ver historial"
+                        >
+                          <BookOpen size={20} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {viewProfile && (
         <div className="fixed inset-0 z-10 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -363,5 +390,5 @@ export default function Pacientes() {
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -159,7 +159,12 @@ export default function DoctorForm() {
       setIsLoading(true);
 
       const medicoData = {};
-
+      if (data.name) {
+        medicoData.name = data.name;
+      }
+      if (data.lastname) {
+        medicoData.lastname = data.lastname;
+      }
       if (data.email) {
         medicoData.email = data.email;
       }
@@ -168,6 +173,15 @@ export default function DoctorForm() {
       }
       if (data.telefono) {
         medicoData.telefono = data.telefono;
+      }
+      if (data.ci) {
+        medicoData.ci = data.ci;
+      }
+      if (data.fechaNacimiento) {
+        medicoData.fechaNacimiento = data.fechaNacimiento;
+      }
+      if (data.genero) {
+        medicoData.genero = data.genero;
       }
 
       medicoData.especialidades = data.especialidades.map((e) => e.value);
@@ -346,6 +360,50 @@ export default function DoctorForm() {
             <input
               type="number"
               {...register("telefono")}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+              placeholder="Ingrese el teléfono"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              <FiPhone className="inline-block mr-2" />
+              CI:
+            </label>
+            <input
+              type="number"
+              {...register("ci")}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+              placeholder="Ingrese el Carnet"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              <FiPhone className="inline-block mr-2" />
+              Género:
+            </label>
+            <select
+              {...register("genero", { required: "El género es requerido" })} // Registrar el campo "genero"
+              className="mt-1 block w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              required
+            >
+              <option value="" disabled>
+                Seleccione el género
+              </option>
+              <option value="Masculino">Masculino</option>
+              <option value="Femenino">Femenino</option>
+            </select>
+            {errors.genero && (
+              <p className="text-red-500 text-xs mt-1">{errors.genero.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              <FiPhone className="inline-block mr-2" />
+              Fecha de Nacimiento:
+            </label>
+            <input
+              type="date"
+              {...register("fechaNacimiento")}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
               placeholder="Ingrese el teléfono"
             />
