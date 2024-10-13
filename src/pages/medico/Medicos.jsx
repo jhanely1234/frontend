@@ -9,6 +9,7 @@ import { FiEye, FiTrash, FiFilter, FiX, FiCalendar, FiClock, FiList, FiGrid } fr
 import { BsPencil } from "react-icons/bs";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/auth.hook";
+import Select from 'react-select'; // Usado solo si prefieres react-select
 
 Modal.setAppElement("#root");
 
@@ -17,12 +18,13 @@ export default function Component() {
   const [viewProfile, setViewProfile] = useState(false);
   const [selectedMedico, setSelectedMedico] = useState(null);
   const [searchName, setSearchName] = useState('');
-  const [searchEspecialidad, setSearchEspecialidad] = useState('');
+  const [searchEspecialidades, setSearchEspecialidades] = useState([]); // Array para especialidades múltiples
   const [searchGenero, setSearchGenero] = useState('');
   const [minEdad, setMinEdad] = useState('');
   const [maxEdad, setMaxEdad] = useState('');
+  const [especialidadesOptions, setEspecialidadesOptions] = useState([]); // Para opciones del select
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState('cards'); // New state for view mode
+  const [viewMode, setViewMode] = useState('cards');
   const navigate = useNavigate();
   const {
     auth: { roles },
@@ -34,6 +36,15 @@ export default function Component() {
       try {
         const data = await obtenerTodosMedicos();
         setMedicos(data.medicos);
+
+        // Extraer todas las especialidades únicas para las opciones del select múltiple
+        const especialidadesSet = new Set();
+        data.medicos.forEach((medico) => {
+          medico.especialidades.forEach((especialidad) => {
+            especialidadesSet.add(especialidad);
+          });
+        });
+        setEspecialidadesOptions([...especialidadesSet].map(especialidad => ({ value: especialidad, label: especialidad })));
       } catch (error) {
         console.error("Error fetching medicos:", error);
       }
@@ -66,7 +77,7 @@ export default function Component() {
 
   const resetFilters = () => {
     setSearchName('');
-    setSearchEspecialidad('');
+    setSearchEspecialidades([]);
     setSearchGenero('');
     setMinEdad('');
     setMaxEdad('');
@@ -83,10 +94,15 @@ export default function Component() {
   );
 
   const filteredMedicos = medicos.filter((medico) => {
+    // Filtrar si hay especialidades seleccionadas
+    const especialidadesFiltradas = searchEspecialidades.length === 0 || searchEspecialidades.some((especialidad) =>
+      medico.especialidades.includes(especialidad.value)
+    );
+
     return (
       (searchName === '' || `${medico.name} ${medico.lastname}`.toLowerCase().includes(searchName.toLowerCase())) &&
-      (searchEspecialidad === '' || medico.especialidades.some(especialidad => especialidad.name.toLowerCase().includes(searchEspecialidad.toLowerCase()))) &&
-      (searchGenero === '' || medico.genero.toLowerCase() === searchGenero.toLowerCase()) &&
+      especialidadesFiltradas &&
+      (searchGenero === '' || (medico.genero && medico.genero.toLowerCase() === searchGenero.toLowerCase())) &&
       (minEdad === '' || medico.edad >= parseInt(minEdad)) &&
       (maxEdad === '' || medico.edad <= parseInt(maxEdad))
     );
@@ -195,13 +211,17 @@ export default function Component() {
                 onChange={(e) => setSearchName(e.target.value)}
                 className="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <input
-                type="text"
+
+              {/* Usar react-select para múltiples especialidades */}
+              <Select
+                isMulti
+                value={searchEspecialidades}
+                onChange={(selectedOptions) => setSearchEspecialidades(selectedOptions)}
+                options={especialidadesOptions}
                 placeholder="Buscar por especialidad"
-                value={searchEspecialidad}
-                onChange={(e) => setSearchEspecialidad(e.target.value)}
-                className="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full"
               />
+
               <select
                 value={searchGenero}
                 onChange={(e) => setSearchGenero(e.target.value)}
@@ -344,7 +364,7 @@ export default function Component() {
                 <div className="flex flex-wrap gap-2 mb-6">
                   {selectedMedico.especialidades.map((especialidad, index) => (
                     <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                      {especialidad.name}
+                      {especialidad}
                     </span>
                   ))}
                 </div>
@@ -364,7 +384,7 @@ export default function Component() {
                         Turno: {disp.turno}
                       </p>
                       <p className="text-gray-600 mt-2">
-                        <span className="font-medium">Especialidad:</span> {disp.especialidad.name}
+                        <span className="font-medium">Especialidad:</span> {disp.especialidad}
                       </p>
                     </div>
                   ))}

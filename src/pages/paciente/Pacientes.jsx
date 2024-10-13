@@ -84,11 +84,12 @@ export default function Pacientes() {
     return (
       (filters.name === "" || `${paciente.name} ${paciente.lastname}`.toLowerCase().includes(filters.name.toLowerCase())) &&
       (filters.ci === "" || (paciente.ci && paciente.ci.toString().includes(filters.ci))) &&
-      (filters.sexo === "" || paciente.genero.toLowerCase() === filters.sexo.toLowerCase()) &&
+      (filters.sexo === "" || (paciente.genero && paciente.genero.toLowerCase() === filters.sexo.toLowerCase())) &&
       (filters.minEdad === "" || paciente.edad >= parseInt(filters.minEdad)) &&
       (filters.maxEdad === "" || paciente.edad <= parseInt(filters.maxEdad))
     );
   });
+
 
   if (isLoading) {
     return (
@@ -168,8 +169,8 @@ export default function Pacientes() {
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Todos los sexos</option>
-                <option value="Masculino">Masculino</option>
-                <option value="Femenino">Femenino</option>
+                <option value="masculino">Masculino</option>
+                <option value="femenino">Femenino</option>
               </select>
               <input
                 type="number"

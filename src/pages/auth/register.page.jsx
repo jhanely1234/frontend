@@ -10,7 +10,7 @@ const RegisterPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [ci, setCi] = useState('');
-  const [sexo, setSexo] = useState('');
+  const [genero, setGenero] = useState('');
   const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [telefono, setTelefono] = useState('');
   const [nombreTutor, setNombreTutor] = useState('');
@@ -71,6 +71,11 @@ const RegisterPage = () => {
       return toast.error('El password es obligatorio');
     }
 
+    if (!genero) {
+      setIsLoading(false);
+      return toast.error('El genero es obligatorio');
+    }
+
     if (password.length < 6) {
       setIsLoading(false);
       return toast.error('El password debe contener al menos 6 caracteres');
@@ -91,7 +96,7 @@ const RegisterPage = () => {
         email,
         password,
         ci,
-        sexo,
+        genero,
         fechaNacimiento: formattedFechaNacimiento,
         telefono,
         nombre_tutor: nombreTutor,
@@ -112,7 +117,7 @@ const RegisterPage = () => {
       setEmail('');
       setPassword('');
       setCi('');
-      setSexo('');
+      setGenero('');
       setFechaNacimiento('');
       setTelefono('');
       setNombreTutor('');
@@ -214,20 +219,19 @@ const RegisterPage = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="sexo" className="block text-sm font-medium text-gray-700 mb-1">
-                  Sexo
+                <label htmlFor="Genero" className="block text-sm font-medium text-gray-700 mb-1">
+                  Genero
                 </label>
                 <select
-                  id="sexo"
+                  id="genero"
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
-                  value={sexo}
-                  onChange={(e) => setSexo(e.target.value)}
+                  value={genero}
+                  onChange={(e) => setGenero(e.target.value)}
                   required
                 >
-                  <option value="" disabled>Selecciona el sexo</option>
+                  <option value="" disabled>Selecciona el Genero</option>
                   <option value="Masculino">Masculino</option>
                   <option value="Femenino">Femenino</option>
-                  <option value="Otro">Otro</option>
                 </select>
               </div>
               <div>

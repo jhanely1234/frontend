@@ -40,6 +40,7 @@ export default function Reservas() {
   const [calificacion, setCalificacion] = useState(null);
   const [showCalificarModal, setShowCalificarModal] = useState(false);
   const [consultaId, setConsultaId] = useState(null);
+  const [filtroHoyActivado, setFiltroHoyActivado] = useState(false); // Estado para controlar el filtro de hoy
   const navigate = useNavigate();
   const {
     auth: { roles, _id },
@@ -53,6 +54,9 @@ export default function Reservas() {
     fechaReserva: "",
     estado: "",
   });
+
+  // Obtener la fecha actual desde el dispositivo
+  const fechaActual = moment().format("YYYY-MM-DD");
 
   useEffect(() => {
     fetchReservas();
@@ -105,6 +109,7 @@ export default function Reservas() {
   const filteredReservas = useMemo(() => {
     let result = reservas;
 
+    // Aplicar búsqueda por paciente, médico y especialidad con Fuse.js
     if (filters.paciente || filters.medico || filters.especialidad) {
       const searchResults = fuse.search(
         filters.paciente || filters.medico || filters.especialidad
@@ -112,15 +117,27 @@ export default function Reservas() {
       result = searchResults.map((result) => result.item);
     }
 
-    return Array.isArray(result)
-      ? result.filter(
-        (reserva) =>
-          (!filters.fechaReserva ||
-            reserva.fechaReserva.split("T")[0] === filters.fechaReserva) &&
-          (!filters.estado || reserva.estado_reserva === filters.estado)
-      )
-      : [];
-  }, [reservas, filters, fuse]);
+    // Aplicar filtro de fecha y estado
+    result = result.filter(
+      (reserva) =>
+        (!filters.fechaReserva ||
+          reserva.fechaReserva.split("T")[0] === filters.fechaReserva) &&
+        (!filters.estado || reserva.estado_reserva === filters.estado)
+    );
+
+    // Aplicar filtro de reservas de hoy si está activado
+    if (filtroHoyActivado) {
+      result = result.filter(
+        (reserva) => reserva.fechaReserva.split("T")[0] === fechaActual
+      );
+    }
+
+    return result;
+  }, [reservas, filters, fuse, filtroHoyActivado, fechaActual]);
+
+  const handleToggleFiltroHoy = () => {
+    setFiltroHoyActivado(!filtroHoyActivado); // Alternar entre activar y desactivar el filtro
+  };
 
   const handleViewProfile = async (id) => {
     try {
@@ -184,7 +201,10 @@ export default function Reservas() {
     navigate(`/medico/consultas/crear/${id}`);
   };
 
-  const handleconfirmarReservaMedico = async (reservaId, estadoConfirmacionMedico) => {
+  const handleconfirmarReservaMedico = async (
+    reservaId,
+    estadoConfirmacionMedico
+  ) => {
     try {
       const response = await confirmarReservaMedico(
         reservaId,
@@ -313,7 +333,7 @@ export default function Reservas() {
         Lista de Reservas
       </h1>
 
-      {/* Filtros de búsqueda */}
+      {/* Botón para alternar el filtro de reservas del día */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         {canAddReserva && (
           <Link
@@ -335,6 +355,12 @@ export default function Reservas() {
             Nueva Reserva
           </Link>
         )}
+        <button
+          onClick={handleToggleFiltroHoy}
+          className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300 ease-in-out flex items-center text-sm"
+        >
+          {filtroHoyActivado ? "Quitar Filtro" : "Ver Reservas de Hoy"}
+        </button>
         <button
           onClick={() => setShowFilters(!showFilters)}
           className="bg-gray-200 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-300 transition duration-300 ease-in-out flex items-center text-sm"
@@ -401,6 +427,7 @@ export default function Reservas() {
         </div>
       )}
 
+      {/* Mostrar las reservas filtradas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredReservas.map((reserva) => (
           <div
