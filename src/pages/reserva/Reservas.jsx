@@ -18,11 +18,7 @@ import moment from "moment";
 import locale from "antd/es/date-picker/locale/es_ES";
 import { PDFViewer } from "@react-pdf/renderer";
 import PrescriptionPDF from "./RecetaPDF";
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
-// Inicializa el contenedor de toast
-toast.configure();
 const { Option } = Select;
 
 export default function Reservas() {
