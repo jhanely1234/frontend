@@ -124,7 +124,7 @@ const HistorialMedicoPDF = ({ paciente, historial }) => {
             <Text style={styles.title}>Historial</Text>
             <Text style={styles.subtitle}>Medico</Text>
           </View>
-          <Image style={styles.logo} src="/public/logo_mediconsulta_original.png" />
+          <Image style={styles.logo} src="/logo_mediconsulta_original.png" />
         </View>
 
         <View style={styles.infoSection}>

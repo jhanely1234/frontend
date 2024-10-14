@@ -754,7 +754,7 @@ export default function Reservas() {
                 fc={consultaDetalles.signos_vitales[0]?.Fc || "N/A"}
                 fr={consultaDetalles.signos_vitales[0]?.Fr || "N/A"}
                 temp={consultaDetalles.signos_vitales[0]?.Temperatura || "N/A"}
-                logoUrl="/public/logo_mediconsulta_original.png"
+                logoUrl="/logo_mediconsulta_original.png"
                 prescriptionText={consultaDetalles.receta}
                 diagnosis={consultaDetalles.diagnostico}
                 physicalExam={consultaDetalles.examen_fisico}
