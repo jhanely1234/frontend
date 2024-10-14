@@ -135,7 +135,7 @@ export default function EnhancedPanelReportes() {
     doc.setFont("helvetica", "bold")
     doc.setFontSize(18)
     doc.setTextColor(...colorPrimario)
-    doc.text(`Reporte Clínico: ${tipoReporte.charAt(0).toUpperCase() + tipoReporte.slice(1)}`, pageWidth / 2, y + 25, { align: 'center' })
+    doc.text(`Reporte Medico: ${tipoReporte.charAt(0).toUpperCase() + tipoReporte.slice(1)}`, pageWidth / 2, y + 25, { align: 'center' })
 
     y += 60
 
