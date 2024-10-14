@@ -4,10 +4,10 @@ import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
   esbuild: {
-    target: 'esnext' // Soporte para top-level await
+    target: 'esnext', // Soporte para top-level await
   },
   build: {
-    target: ['esnext'] // Configura el target para navegadores modernos
+    target: ['esnext'], // Configura el target para navegadores modernos
   },
   plugins: [
     react(),
@@ -50,33 +50,34 @@ export default defineConfig({
       },
       workbox: {
         globDirectory: "dist",
-        globPatterns: ["**/*.{js,css,html,wasm,png,jpg,svg,json}"], // Ajuste para cachear todos los archivos
+        globPatterns: ["**/*.{js,css,html,wasm,png,jpg,svg,json}"], // Cachear todos los archivos estáticos
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
-            handler: "NetworkFirst",
+            urlPattern: ({ url }) => url.origin === self.location.origin, // Cachea todos los archivos estáticos
+            handler: "CacheFirst", // Prioriza cache para modo offline
             options: {
-              cacheName: "api-cache",
-              networkTimeoutSeconds: 10,
+              cacheName: "static-assets-cache",
               expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 1 día
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 días
               },
             },
           },
           {
-            urlPattern: ({ url }) =>
-              url.origin === self.location.origin &&
-              !url.pathname.startsWith("/api/"),
-            handler: "StaleWhileRevalidate",
+            // Cachea todas las rutas que empiecen con las URLs de tus APIs
+            urlPattern: new RegExp(
+              `^https://mediconsulta\\.zapto\\.org/(auth|reservas/api|reporte/api|pacientes/api|medicos/api|historiales/api|especialidades/api|consultas/api)`
+            ),
+            handler: "NetworkFirst", // Estrategia NetworkFirst para tener los datos más recientes cuando haya red
             options: {
-              cacheName: "assets-cache",
+              cacheName: "api-cache",
+              networkTimeoutSeconds: 10,
               expiration: {
                 maxEntries: 100,
                 maxAgeSeconds: 60 * 60 * 24 * 7, // 1 semana
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
               },
             },
           },
