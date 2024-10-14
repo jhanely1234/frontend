@@ -1,13 +1,12 @@
-'use client'
-
 import React, { useState, useEffect } from 'react'
 import { jsPDF } from 'jspdf'
+import 'jspdf-autotable'
 import { FileBarChart, Users, UserCog, Calendar } from 'lucide-react'
 import { obtenerReporteConsultas, obtenerReporteReservas, obtenerReportePaciente, obtenerReporteDoctor } from "../../api/reportesApi"
 import { obtenerTodosPacientes } from "../../api/pacienteapi"
 import { obtenerTodosMedicos } from "../../api/medicoapi"
 
-export default function PanelReportes() {
+export default function EnhancedPanelReportes() {
   const [tipoReporte, setTipoReporte] = useState('consultas')
   const [fechaInicio, setFechaInicio] = useState('')
   const [fechaFin, setFechaFin] = useState('')
@@ -82,278 +81,208 @@ export default function PanelReportes() {
   }
 
   const generarPDF = (datos) => {
-    const doc = new jsPDF()
+    const doc = new jsPDF({
+      format: 'letter',
+      unit: 'pt'
+    })
 
-    const checkNewPage = (y) => {
-      if (y >= 280) {
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const margin = 40
+    let y = margin
+
+    // Configuración de estilos
+    const colorPrimario = [0, 102, 204]
+    const colorSecundario = [41, 128, 185]
+    const colorFondo = [236, 240, 241]
+
+    const agregarSeccion = (titulo, datos, columnas) => {
+      if (y + 60 > pageHeight - margin) {
         doc.addPage()
-        return 20
+        y = margin
       }
-      return y
-    }
 
-    doc.setFont("helvetica", "bold")
-    doc.setFontSize(24)
-    doc.setTextColor(0, 102, 204)
-    doc.text(`Reporte de ${tipoReporte.charAt(0).toUpperCase() + tipoReporte.slice(1)}`, 105, 20, { align: 'center' })
+      doc.setFillColor(...colorSecundario)
+      doc.rect(margin, y, pageWidth - 2 * margin, 30, 'F')
+      doc.setFont("helvetica", "bold")
+      doc.setFontSize(12)
+      doc.setTextColor(255, 255, 255)
+      doc.text(titulo, margin + 10, y + 20)
+      y += 40
 
-    doc.setFont("helvetica", "normal")
-    doc.setFontSize(12)
-    doc.setTextColor(0, 0, 0)
-
-    let y = 40
-
-    if (tipoReporte === 'consultas' && datos) {
-      datos.data.forEach((consulta, index) => {
-        y = checkNewPage(y)
-        doc.setFont("helvetica", "bold")
-        doc.text(`Consulta ${index + 1}:`, 20, y)
-        y += 10
-        doc.setFont("helvetica", "normal")
-
-        y = checkNewPage(y)
-        doc.text(`Paciente: ${consulta.paciente.nombreCompleto}`, 20, y)
-        y += 10
-
-        y = checkNewPage(y)
-        doc.text(`Médico: ${consulta.medico.nombreCompleto}`, 20, y)
-        y += 10
-
-        y = checkNewPage(y)
-        doc.text(`Fecha de Consulta: ${new Date(consulta.consulta.fechaConsulta).toLocaleString()}`, 20, y)
-        y += 10
-
-        y = checkNewPage(y)
-        doc.text(`Motivo: ${consulta.consulta.motivoConsulta}`, 20, y)
-        y += 10
-
-        y = checkNewPage(y)
-        doc.text(`Diagnóstico: ${consulta.consulta.diagnostico}`, 20, y)
-        y += 10
-
-        y = checkNewPage(y)
-        doc.text(`Receta: ${consulta.consulta.receta}`, 20, y)
-        y += 10
-
-        const sv = consulta.consulta.signosVitales[0]
-        y = checkNewPage(y)
-        doc.text(`Signos Vitales:`, 20, y)
-        y += 10
-        doc.text(`FC: ${sv.Fc}, FR: ${sv.Fr}, Temperatura: ${sv.Temperatura}, Peso: ${sv.peso}, Talla: ${sv.talla}`, 30, y)
-        y += 20
+      doc.setTextColor(0, 0, 0)
+      doc.autoTable({
+        startY: y,
+        head: [columnas],
+        body: datos,
+        theme: 'striped',
+        styles: { fontSize: 10, cellPadding: 5 },
+        columnStyles: { 0: { fontStyle: 'bold' } },
+        alternateRowStyles: { fillColor: colorFondo },
+        headStyles: { fillColor: colorPrimario, textColor: [255, 255, 255] },
+        margin: { left: margin, right: margin },
+        tableWidth: 'auto'
       })
 
-      y = checkNewPage(y)
-      doc.setFont("helvetica", "bold")
-      doc.text("Totales:", 20, y)
-      y += 10
-      doc.setFont("helvetica", "normal")
-      doc.text(`Total Consultas: ${datos.totals.totalConsultas}`, 30, y)
-      y += 10
-      doc.text(`Consultas Atendidas: ${datos.totals.consultasAtendidas}`, 30, y)
-      y += 10
-      doc.text(`Consultas Pendientes: ${datos.totals.consultasPendientes}`, 30, y)
-      y += 10
-      doc.text(`Consultas Canceladas: ${datos.totals.consultasCanceladas}`, 30, y)
+      y = doc.lastAutoTable.finalY + 20
+    }
+
+    // Agregar logo
+    const logoUrl = '/logo_mediconsulta_original.png?height=40&width=40'
+    doc.addImage(logoUrl, 'PNG', margin, y, 40, 40)
+
+    // Título del reporte
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(18)
+    doc.setTextColor(...colorPrimario)
+    doc.text(`Reporte Clínico: ${tipoReporte.charAt(0).toUpperCase() + tipoReporte.slice(1)}`, pageWidth / 2, y + 25, { align: 'center' })
+
+    y += 60
+
+    // Información del reporte
+    doc.setFont("helvetica", "normal")
+    doc.setFontSize(10)
+    doc.setTextColor(0, 0, 0)
+    doc.text(`Fecha de generación: ${new Date().toLocaleString()}`, margin, y)
+    doc.text(`Período: ${fechaInicio} - ${fechaFin}`, margin, y + 15)
+
+    y += 40
+
+    if (tipoReporte === 'consultas' && datos) {
+      datos.data?.forEach((consulta, index) => {
+        agregarSeccion(`Consulta ${index + 1}`, [
+          ['Paciente', consulta.paciente?.nombreCompleto || 'No disponible'],
+          ['Médico', consulta.medico?.nombreCompleto || 'No disponible'],
+          ['Fecha de Consulta', new Date(consulta.consulta?.fechaConsulta).toLocaleString() || 'No disponible'],
+          ['Motivo', consulta.consulta?.motivoConsulta || 'No disponible'],
+          ['Diagnóstico', consulta.consulta?.diagnostico || 'No disponible'],
+          ['Receta', consulta.consulta?.receta || 'No disponible']
+        ], ['Campo', 'Valor'])
+
+        const sv = consulta.consulta?.signosVitales?.[0]
+        agregarSeccion('Signos Vitales', [
+          ['FC', sv?.Fc || 'N/A'],
+          ['FR', sv?.Fr || 'N/A'],
+          ['Temperatura', sv?.Temperatura || 'N/A'],
+          ['Peso', sv?.peso || 'N/A'],
+          ['Talla', sv?.talla || 'N/A']
+        ], ['Signo Vital', 'Valor'])
+      })
+
+      agregarSeccion("Resumen de Consultas", [
+        ['Total Consultas', datos.totals?.totalConsultas || '0'],
+        ['Consultas Atendidas', datos.totals?.consultasAtendidas || '0'],
+        ['Consultas Pendientes', datos.totals?.consultasPendientes || '0'],
+        ['Consultas Canceladas', datos.totals?.consultasCanceladas || '0']
+      ], ['Categoría', 'Cantidad'])
     }
 
     if (tipoReporte === 'reservas' && datos) {
-      datos.data.forEach((reserva, index) => {
-        y = checkNewPage(y)
-        doc.setFont("helvetica", "bold")
-        doc.text(`Reserva ${index + 1}:`, 20, y)
-        y += 10
-        doc.setFont("helvetica", "normal")
+      const reservasData = datos.data.map(reserva => [
+        new Date(reserva.reserva.fechaReserva).toLocaleDateString(),
+        reserva.reserva.horaInicio,
+        reserva.paciente.nombreCompleto,
+        reserva.medico.nombreCompleto,
+        reserva.medico.especialidad,
+        reserva.reserva.estado
+      ])
 
-        y = checkNewPage(y)
-        doc.text(`Paciente: ${reserva.paciente.nombreCompleto} (CI: ${reserva.paciente.ci})`, 20, y)
-        y += 10
+      agregarSeccion("Reservas", reservasData, ['Fecha', 'Hora', 'Paciente', 'Médico', 'Especialidad', 'Estado'])
 
-        y = checkNewPage(y)
-        doc.text(`Médico: ${reserva.medico.nombreCompleto} (${reserva.medico.especialidad})`, 20, y)
-        y += 10
-
-        y = checkNewPage(y)
-        doc.text(`Fecha de Reserva: ${new Date(reserva.reserva.fechaReserva).toLocaleDateString()}`, 20, y)
-        y += 10
-
-        y = checkNewPage(y)
-        doc.text(`Hora: ${reserva.reserva.horaInicio} - ${reserva.reserva.horaFin}`, 20, y)
-        y += 10
-
-        y = checkNewPage(y)
-        doc.text(`Estado: ${reserva.reserva.estado}`, 20, y)
-        y += 20
-      })
-
-      y = checkNewPage(y)
-      doc.setFont("helvetica", "bold")
-      doc.text("Totales:", 20, y)
-      y += 10
-      doc.setFont("helvetica", "normal")
-      doc.text(`Total Reservas: ${datos.totals.totalReservas}`, 30, y)
-      y += 10
-      doc.text(`Reservas Atendidas: ${datos.totals.reservasAtendidas}`, 30, y)
-      y += 10
-      doc.text(`Reservas Pendientes: ${datos.totals.reservasPendientes}`, 30, y)
-      y += 10
-      doc.text(`Reservas Canceladas: ${datos.totals.reservasCanceladas}`, 30, y)
+      agregarSeccion("Resumen de Reservas", [
+        ['Total Reservas', datos.totals.totalReservas],
+        ['Reservas Atendidas', datos.totals.reservasAtendidas],
+        ['Reservas Pendientes', datos.totals.reservasPendientes],
+        ['Reservas Canceladas', datos.totals.reservasCanceladas]
+      ], ['Categoría', 'Cantidad'])
     }
 
     if (tipoReporte === 'pacientes' && datos) {
       const { paciente, reservas, consultas, totals } = datos.data
 
-      y = checkNewPage(y)
-      doc.setFont("helvetica", "bold")
-      doc.text("Información del Paciente:", 20, y)
-      y += 10
-      doc.setFont("helvetica", "normal")
-      doc.text(`Nombre: ${paciente.nombreCompleto}`, 30, y)
-      y += 10
-      doc.text(`CI: ${paciente.ci}`, 30, y)
-      y += 10
-      doc.text(`Fecha de Nacimiento: ${new Date(paciente.fechaNacimiento).toLocaleDateString()}`, 30, y)
-      y += 20
+      agregarSeccion("Información del Paciente", [
+        ['Nombre', paciente.nombreCompleto],
+        ['CI', paciente.ci],
+        ['Fecha de Nacimiento', new Date(paciente.fechaNacimiento).toLocaleDateString()]
+      ], ['Campo', 'Valor'])
 
       if (reservas.length > 0) {
-        y = checkNewPage(y)
-        doc.setFont("helvetica", "bold")
-        doc.text("Reservas:", 20, y)
-        y += 10
-        doc.setFont("helvetica", "normal")
-
-        reservas.forEach((reserva, index) => {
-          y = checkNewPage(y)
-          doc.text(`Reserva ${index + 1}:`, 30, y)
-          y += 10
-          doc.text(`Fecha: ${new Date(reserva.fechaReserva).toLocaleDateString()}`, 40, y)
-          y += 10
-          doc.text(`Hora: ${reserva.horaInicio}`, 40, y)
-          y += 10
-          doc.text(`Especialidad: ${reserva.especialidad}`, 40, y)
-          y += 10
-          doc.text(`Estado: ${reserva.estado}`, 40, y)
-          y += 10
-          doc.text(`Médico: ${reserva.medico}`, 40, y)
-          y += 15
-        })
+        const reservasData = reservas.map(reserva => [
+          new Date(reserva.fechaReserva).toLocaleDateString(),
+          reserva.horaInicio,
+          reserva.especialidad,
+          reserva.estado,
+          reserva.medico
+        ])
+        agregarSeccion("Reservas del Paciente", reservasData, ['Fecha', 'Hora', 'Especialidad', 'Estado', 'Médico'])
       }
 
       if (consultas.length > 0) {
-        y = checkNewPage(y)
-        doc.setFont("helvetica", "bold")
-        doc.text("Consultas:", 20, y)
-        y += 10
-        doc.setFont("helvetica", "normal")
-
-        consultas.forEach((consulta, index) => {
-          y = checkNewPage(y)
-          doc.text(`Consulta ${index + 1}:`, 30, y)
-          y += 10
-          doc.text(`Fecha: ${new Date(consulta.fechaConsulta).toLocaleString()}`, 40, y)
-          y += 10
-          doc.text(`Motivo: ${consulta.motivoConsulta}`, 40, y)
-          y += 10
-          doc.text(`Diagnóstico: ${consulta.diagnostico}`, 40, y)
-          y += 10
-          doc.text(`Receta: ${consulta.receta}`, 40, y)
-          y += 15
-        })
+        const consultasData = consultas.map(consulta => [
+          new Date(consulta.fechaConsulta).toLocaleString(),
+          consulta.motivoConsulta,
+          consulta.diagnostico,
+          consulta.receta
+        ])
+        agregarSeccion("Consultas del Paciente", consultasData, ['Fecha', 'Motivo', 'Diagnóstico', 'Receta'])
       }
 
-      y = checkNewPage(y)
-      doc.setFont("helvetica", "bold")
-      doc.text("Totales:", 20, y)
-      y += 10
-      doc.setFont("helvetica", "normal")
-      doc.text(`Total Reservas: ${totals.totalReservas}`, 30, y)
-      y += 10
-      doc.text(`Reservas Atendidas: ${totals.reservasAtendidas}`, 30, y)
-      y += 10
-      doc.text(`Reservas Pendientes: ${totals.reservasPendientes}`, 30, y)
-      y += 10
-      doc.text(`Reservas Canceladas: ${totals.reservasCanceladas}`, 30, y)
-      y += 10
-      doc.text(`Total Consultas: ${totals.totalConsultas}`, 30, y)
+      agregarSeccion("Resumen del Paciente", [
+        ['Total Reservas', totals.totalReservas],
+        ['Reservas Atendidas', totals.reservasAtendidas],
+        ['Reservas Pendientes', totals.reservasPendientes],
+        ['Reservas Canceladas', totals.reservasCanceladas],
+        ['Total Consultas', totals.totalConsultas]
+      ], ['Categoría', 'Cantidad'])
     }
 
     if (tipoReporte === 'medicos' && datos) {
       const { medico, reservas, consultas, totals } = datos.data
 
-      y = checkNewPage(y)
-      doc.setFont("helvetica", "bold")
-      doc.text("Información del Médico:", 20, y)
-      y += 10
-      doc.setFont("helvetica", "normal")
-      doc.text(`Nombre: ${medico.nombreCompleto}`, 30, y)
-      y += 10
-      doc.text(`Especialidades: ${medico.especialidades}`, 30, y)
-      y += 10
-      doc.text(`Turno: ${medico.turno}`, 30, y)
-      y += 20
+      agregarSeccion("Información del Médico", [
+        ['Nombre', medico.nombreCompleto],
+        ['Especialidades', medico.especialidades],
+        ['Turno', medico.turno]
+      ], ['Campo', 'Valor'])
 
       if (reservas.length > 0) {
-        y = checkNewPage(y)
-        doc.setFont("helvetica", "bold")
-        doc.text("Reservas:", 20, y)
-        y += 10
-        doc.setFont("helvetica", "normal")
-
-        reservas.forEach((reserva, index) => {
-          y = checkNewPage(y)
-          doc.text(`Reserva ${index + 1}:`, 30, y)
-          y += 10
-          doc.text(`Fecha: ${new Date(reserva.fechaReserva).toLocaleDateString()}`, 40, y)
-          y += 10
-          doc.text(`Hora: ${reserva.horaInicio}`, 40, y)
-          y += 10
-          doc.text(`Especialidad: ${reserva.especialidad}`, 40, y)
-          y += 10
-          doc.text(`Estado: ${reserva.estado}`, 40, y)
-          y += 10
-          doc.text(`Paciente: ${reserva.paciente}`, 40, y)
-          y += 15
-        })
+        const reservasData = reservas.map(reserva => [
+          new Date(reserva.fechaReserva).toLocaleDateString(),
+          reserva.horaInicio,
+          reserva.especialidad,
+          reserva.estado,
+          reserva.paciente
+        ])
+        agregarSeccion("Reservas del Médico", reservasData, ['Fecha', 'Hora', 'Especialidad', 'Estado', 'Paciente'])
       }
 
       if (consultas.length > 0) {
-        y = checkNewPage(y)
-        doc.setFont("helvetica", "bold")
-        doc.text("Consultas:", 20, y)
-        y += 10
-        doc.setFont("helvetica", "normal")
-
-        consultas.forEach((consulta, index) => {
-          y = checkNewPage(y)
-          doc.text(`Consulta ${index + 1}:`, 30, y)
-          y += 10
-          doc.text(`Fecha: ${new Date(consulta.fechaConsulta).toLocaleString()}`, 40, y)
-          y += 10
-          doc.text(`Motivo: ${consulta.motivoConsulta}`, 40, y)
-          y += 10
-          doc.text(`Diagnóstico: ${consulta.diagnostico}`, 40, y)
-          y += 10
-          doc.text(`Receta: ${consulta.receta}`, 40, y)
-          y += 10
-          doc.text(`Paciente: ${consulta.paciente}`, 40, y)
-          y += 15
-        })
+        const consultasData = consultas.map(consulta => [
+          new Date(consulta.fechaConsulta).toLocaleString(),
+          consulta.motivoConsulta,
+          consulta.diagnostico,
+          consulta.receta,
+          consulta.paciente
+        ])
+        agregarSeccion("Consultas del Médico", consultasData, ['Fecha', 'Motivo', 'Diagnóstico', 'Receta', 'Paciente'])
       }
 
-      y = checkNewPage(y)
-      doc.setFont("helvetica", "bold")
-      doc.text("Totales:", 20, y)
-      y += 10
-      doc.setFont("helvetica", "normal")
-      doc.text(`Total Reservas: ${totals.totalReservas}`, 30, y)
-      y += 10
-      doc.text(`Reservas Atendidas: ${totals.reservasAtendidas}`, 30, y)
-      y += 10
-      doc.text(`Reservas Pendientes: ${totals.reservasPendientes}`, 30, y)
-      y += 10
-      doc.text(`Reservas Canceladas: ${totals.reservasCanceladas}`, 30, y)
-      y += 10
-      doc.text(`Total Consultas: ${totals.totalConsultas}`, 30, y)
+      agregarSeccion("Resumen del Médico", [
+        ['Total Reservas', totals.totalReservas],
+        ['Reservas Atendidas', totals.reservasAtendidas],
+        ['Reservas Pendientes', totals.reservasPendientes],
+        ['Reservas Canceladas', totals.reservasCanceladas],
+        ['Total Consultas', totals.totalConsultas]
+      ], ['Categoría', 'Cantidad'])
+    }
+
+    // Agregar pie de página
+    const totalPages = doc.internal.getNumberOfPages()
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i)
+      doc.setFontSize(10)
+      doc.setTextColor(100)
+      doc.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 20, { align: 'center' })
     }
 
     const pdfDataUri = doc.output('datauristring')
@@ -372,8 +301,8 @@ export default function PanelReportes() {
                 key={tipo}
                 onClick={() => setTipoReporte(tipo)}
                 className={`flex items-center justify-center px-4 py-2 rounded-md ${tipoReporte === tipo
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
               >
                 {tipo === 'consultas' && <FileBarChart className="mr-2 h-4 w-4" />}

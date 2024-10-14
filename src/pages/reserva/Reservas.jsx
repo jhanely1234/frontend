@@ -12,7 +12,7 @@ import {
 import { obtenerHistorialPorReservaId } from "../../api/historialapi";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/auth.hook";
-import { Modal, DatePicker, Select, Rate } from "antd";
+import { Modal, DatePicker, Select, Rate, message } from "antd";
 import Fuse from "fuse.js";
 import moment from "moment";
 import locale from "antd/es/date-picker/locale/es_ES";
@@ -40,7 +40,7 @@ export default function Reservas() {
   const [calificacion, setCalificacion] = useState(null);
   const [showCalificarModal, setShowCalificarModal] = useState(false);
   const [consultaId, setConsultaId] = useState(null);
-  const [filtroHoyActivado, setFiltroHoyActivado] = useState(false); // Estado para controlar el filtro de hoy
+  const [filtroHoyActivado, setFiltroHoyActivado] = useState(false);
   const navigate = useNavigate();
   const {
     auth: { roles, _id },
@@ -55,7 +55,6 @@ export default function Reservas() {
     estado: "",
   });
 
-  // Obtener la fecha actual desde el dispositivo
   const fechaActual = moment().format("YYYY-MM-DD");
 
   useEffect(() => {
@@ -109,7 +108,6 @@ export default function Reservas() {
   const filteredReservas = useMemo(() => {
     let result = reservas;
 
-    // Aplicar búsqueda por paciente, médico y especialidad con Fuse.js
     if (filters.paciente || filters.medico || filters.especialidad) {
       const searchResults = fuse.search(
         filters.paciente || filters.medico || filters.especialidad
@@ -117,7 +115,6 @@ export default function Reservas() {
       result = searchResults.map((result) => result.item);
     }
 
-    // Aplicar filtro de fecha y estado
     result = result.filter(
       (reserva) =>
         (!filters.fechaReserva ||
@@ -125,7 +122,6 @@ export default function Reservas() {
         (!filters.estado || reserva.estado_reserva === filters.estado)
     );
 
-    // Aplicar filtro de reservas de hoy si está activado
     if (filtroHoyActivado) {
       result = result.filter(
         (reserva) => reserva.fechaReserva.split("T")[0] === fechaActual
@@ -136,7 +132,7 @@ export default function Reservas() {
   }, [reservas, filters, fuse, filtroHoyActivado, fechaActual]);
 
   const handleToggleFiltroHoy = () => {
-    setFiltroHoyActivado(!filtroHoyActivado); // Alternar entre activar y desactivar el filtro
+    setFiltroHoyActivado(!filtroHoyActivado);
   };
 
   const handleViewProfile = async (id) => {
@@ -198,87 +194,79 @@ export default function Reservas() {
   };
 
   const handleAtenderReserva = async (id, reserva) => {
-    const fechaActual = moment(); // Obtener la fecha y hora actual
-    const fechaReserva = moment(reserva.fechaReserva); // Fecha de la reserva
-    const horaInicioReserva = moment(reserva.horaInicio, "HH:mm"); // Hora de inicio de la reserva
-    const horaFinReserva = moment(reserva.horaFin, "HH:mm"); // Hora de fin de la reserva
+    const fechaActual = moment();
+    const fechaReserva = moment(reserva.fechaReserva);
+    const horaInicioReserva = moment(reserva.horaInicio, "HH:mm");
+    const horaFinReserva = moment(reserva.horaFin, "HH:mm");
 
-    // Verificar si la fecha actual coincide con la fecha de la reserva
     const fechaCoincide = fechaActual.isSame(fechaReserva, 'day');
-
-    // Verificar si la hora actual está dentro del rango de horas de la reserva
-    const horaCoincide =
-      fechaActual.isBetween(horaInicioReserva, horaFinReserva, null, '[)');
+    const horaCoincide = fechaActual.isBetween(horaInicioReserva, horaFinReserva, null, '[)');
 
     if (!fechaCoincide || !horaCoincide) {
-      // Mostrar advertencia si la fecha u hora no coinciden
       const continuar = window.confirm(
         "Está intentando atender fuera de la fecha u hora de la reserva. ¿Desea continuar?"
       );
       if (!continuar) {
-        return; // Cancelar la acción si el usuario elige "No"
+        return;
       }
     }
 
-    // Si todo está correcto o el usuario eligió continuar, proceder a la atención
     navigate(`/medico/consultas/crear/${id}`);
   };
 
-
-  const handleconfirmarReservaMedico = async (
-    reservaId,
-    estadoConfirmacionMedico
-  ) => {
+  const handleconfirmarReservaMedico = async (reservaId, estadoConfirmacionMedico) => {
     try {
-      const response = await confirmarReservaMedico(
-        reservaId,
-        estadoConfirmacionMedico
-      );
+      const response = await confirmarReservaMedico(reservaId, estadoConfirmacionMedico);
       if (response.response === "success") {
         await fetchReservas();
         if (estadoConfirmacionMedico === "cancelado") {
+          const reserva = reservas.find((r) => r._id === reservaId);
+          setReservaAReprogramar(reserva);
+          await fetchCalendario(reserva.medico._id, reserva.especialidad_solicitada._id);
           setShowReprogramModal(true);
-          setReservaAReprogramar(
-            reservas.find((reserva) => reserva._id === reservaId)
-          );
         }
       } else {
         throw new Error(response.message || "Error al procesar la reserva");
       }
     } catch (error) {
       console.error("Error al confirmar o cancelar la reserva:", error);
-      alert(error.message || "Error al procesar la reserva");
+      message.error(error.message || "Error al procesar la reserva");
     }
   };
 
-  const handleDateChange = async (date) => {
-    const selectedDate = date.format("YYYY-MM-DD");
-    setNuevaFechaReserva(selectedDate);
-
+  const fetchCalendario = async (medicoId, especialidadId) => {
     try {
-      const response = await obtenerCalendario(
-        reservaAReprogramar.medico._id,
-        reservaAReprogramar.especialidad_solicitada._id
-      );
-      const disponibilidadesDia = response.calendario.find(
-        (dia) => dia.fecha === selectedDate
-      );
-      if (disponibilidadesDia) {
-        const intervalosLibres = disponibilidadesDia.intervalos.filter(
-          (intervalo) => intervalo.estado === "LIBRE"
-        );
-        setHorasDisponibles(intervalosLibres);
+      const response = await obtenerCalendario(medicoId, especialidadId);
+      if (response.response === "success") {
+        setCalendario(response.calendario);
       } else {
-        setHorasDisponibles([]);
+        message.error("Error al obtener la disponibilidad del médico");
       }
     } catch (error) {
       console.error("Error fetching calendar:", error);
+      message.error("Error al obtener el calendario");
+    }
+  };
+
+  const handleDateChange = (date) => {
+    const selectedDate = date.format("YYYY-MM-DD");
+    setNuevaFechaReserva(selectedDate);
+
+    const disponibilidadesDia = calendario.find((dia) => dia.fecha === selectedDate);
+    if (disponibilidadesDia) {
+      const intervalosLibres = disponibilidadesDia.intervalos.filter(
+        (intervalo) => intervalo.estado === "LIBRE"
+      );
+      setHorasDisponibles(intervalosLibres);
+    } else {
+      setHorasDisponibles([]);
+      message.warning("No hay disponibilidad para la fecha seleccionada");
     }
   };
 
   const handleReprogramarReserva = async () => {
     if (!motivoCancelacion || !nuevaFechaReserva || !nuevaHoraInicio) {
-      alert("Por favor, complete todos los campos.");
+      message.error("Por favor, complete todos los campos.");
       return;
     }
 
@@ -295,10 +283,10 @@ export default function Reservas() {
       await crearReserva(nuevaReserva);
       setShowReprogramModal(false);
       await fetchReservas();
-      alert("La cita ha sido reprogramada con éxito.");
+      message.success("La cita ha sido reprogramada con éxito.");
     } catch (error) {
       console.error("Error al reprogramar la reserva:", error);
-      alert("Error al reprogramar la reserva.");
+      message.error("Error al reprogramar la reserva.");
     }
   };
 
@@ -357,7 +345,6 @@ export default function Reservas() {
         Lista de Reservas
       </h1>
 
-      {/* Botón para alternar el filtro de reservas del día */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         {canAddReserva && (
           <Link
@@ -381,7 +368,7 @@ export default function Reservas() {
         )}
         <button
           onClick={handleToggleFiltroHoy}
-          className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300 ease-in-out flex items-center text-sm"
+          className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300 ease-in-out flex items-center  text-sm"
         >
           {filtroHoyActivado ? "Quitar Filtro" : "Ver Reservas de Hoy"}
         </button>
@@ -407,7 +394,6 @@ export default function Reservas() {
 
       {showFilters && (
         <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Inputs de filtro */}
           <input
             type="text"
             placeholder="Buscar por paciente o médico"
@@ -451,7 +437,6 @@ export default function Reservas() {
         </div>
       )}
 
-      {/* Mostrar las reservas filtradas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredReservas.map((reserva) => (
           <div
@@ -469,10 +454,10 @@ export default function Reservas() {
               </div>
               <span
                 className={`px-2 py-1 text-xs font-semibold rounded-full ${reserva.estado_reserva === "atendido"
-                  ? "bg-green-100 text-green-800"
-                  : reserva.estado_reserva === "cancelado"
-                    ? "bg-red-100 text-red-800"
-                    : "bg-yellow-100 text-yellow-800"
+                    ? "bg-green-100 text-green-800"
+                    : reserva.estado_reserva === "cancelado"
+                      ? "bg-red-100 text-red-800"
+                      : "bg-yellow-100 text-yellow-800"
                   }`}
               >
                 {reserva.estado_reserva}
@@ -491,7 +476,6 @@ export default function Reservas() {
               - {reserva.horaInicio}
             </p>
 
-            {/* Mostrar opción de calificar solo si existe consulta y su calificación es 0 */}
             {roles.some((role) => role.name === "paciente") &&
               reserva.estado_reserva === "atendido" &&
               reserva.consulta &&
@@ -584,7 +568,6 @@ export default function Reservas() {
                       </>
                     )}
 
-                  {/* Mostrar opción de confirmar y cancelar para médico */}
                   {roles.some((role) => role.name === "medico") && (
                     <>
                       {reserva.estadoConfirmacionMedico === "pendiente" && (
@@ -624,7 +607,6 @@ export default function Reservas() {
                     </>
                   )}
 
-                  {/* Mostrar opción de cancelar para paciente */}
                   {roles.some((role) => role.name === "paciente") && (
                     <>
                       {reserva.estado_reserva !== "cancelado" && (
@@ -649,7 +631,6 @@ export default function Reservas() {
         ))}
       </div>
 
-      {/* Modal de Calificación */}
       <Modal
         title="Calificar Consulta"
         visible={showCalificarModal}
@@ -773,75 +754,79 @@ export default function Reservas() {
         </div>
       )}
 
-      {showReprogramModal && (
-        <Modal
-          visible={showReprogramModal}
-          title="Reprogramar Reserva"
-          onCancel={() => setShowReprogramModal(false)}
-          onOk={handleReprogramarReserva}
-        >
+      <Modal
+        visible={showReprogramModal}
+        title="Reprogramar Reserva"
+        onCancel={() => setShowReprogramModal(false)}
+        onOk={handleReprogramarReserva}
+        okText="Confirmar"
+        cancelText="Cancelar"
+      >
+        <div className="mb-4">
+          <label className="block text-sm font-semibold mb-2">
+            Motivo de Cancelación:
+          </label>
+          <input
+            type="text"
+            value={motivoCancelacion}
+            onChange={(e) => setMotivoCancelacion(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Ingrese el motivo"
+          />
+        </div>
+
+        <div className="mb-4">
+          <h2 className="text-xl font-bold mb-4">Seleccione nueva fecha y hora:</h2>
+          <DatePicker
+            onChange={handleDateChange}
+            disabledDate={(current) => {
+              const today = moment().startOf("day");
+              return current && current < today;
+            }}
+            dateRender={(current) => {
+              const dateString = current.format("YYYY-MM-DD");
+              const disponibilidadesDia = calendario.find(
+                (dia) => dia.fecha === dateString
+              );
+
+              const tieneDisponibilidad = disponibilidadesDia?.intervalos.some(
+                (intervalo) => intervalo.estado === "LIBRE"
+              );
+
+              return (
+                <div
+                  className={`ant-picker-cell-inner ${tieneDisponibilidad ? "bg-green-500" : "bg-red-500"
+                    } text-white`}
+                >
+                  {current.date()}
+                </div>
+              );
+            }}
+            locale={locale}
+            className="w-full"
+          />
+        </div>
+
+        {horasDisponibles.length > 0 && (
           <div className="mb-4">
             <label className="block text-sm font-semibold mb-2">
-              Motivo de Cancelación:
+              Seleccione Nueva Hora:
             </label>
-            <input
-              type="text"
-              value={motivoCancelacion}
-              onChange={(e) => setMotivoCancelacion(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Ingrese el motivo"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-semibold mb-2">
-              Seleccione Nueva Fecha:
-            </label>
-            <DatePicker
-              onChange={handleDateChange}
-              disabledDate={(current) => {
-                const today = moment().startOf("day");
-                return current && current < today;
-              }}
-              locale={locale}
-              dateRender={(current) => {
-                const isAvailable = calendario.some(
-                  (dia) => dia.fecha === current.format("YYYY-MM-DD")
-                );
-                const isUnavailable = !isAvailable;
-                const style = {
-                  border: `1px solid ${isUnavailable ? "red" : "green"}`,
-                  borderRadius: "50%",
-                };
-                return (
-                  <div className="ant-picker-cell-inner" style={style}>
-                    {current.date()}
-                  </div>
-                );
-              }}
+            <Select
+              value={nuevaHoraInicio}
+              onChange={(value) => setNuevaHoraInicio(value)}
+              placeholder="Seleccione una hora"
               className="w-full"
-            />
+            >
+              {horasDisponibles.map((intervalo) => (
+                <Option key={intervalo.inicio} value={intervalo.inicio}>
+                  {intervalo.inicio}
+                </Option>
+              ))}
+            </Select>
           </div>
-          {horasDisponibles.length > 0 && (
-            <div className="mb-4">
-              <label className="block text-sm font-semibold mb-2">
-                Seleccione Nueva Hora:
-              </label>
-              <Select
-                value={nuevaHoraInicio}
-                onChange={(value) => setNuevaHoraInicio(value)}
-                placeholder="Seleccione una hora"
-                className="w-full"
-              >
-                {horasDisponibles.map((intervalo) => (
-                  <Option key={intervalo.inicio} value={intervalo.inicio}>
-                    {intervalo.inicio}
-                  </Option>
-                ))}
-              </Select>
-            </div>
-          )}
-        </Modal>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }
