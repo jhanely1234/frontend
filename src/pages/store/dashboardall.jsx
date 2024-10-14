@@ -13,7 +13,7 @@ export default function UpdatedHospitalWelcome() {
   const [showAllEspecialidades, setShowAllEspecialidades] = useState(false);
 
   const hospitalInfo = {
-    name: "Clinica MediConsulta",
+    name: "Centro de Salud MediConsulta",
     founded: 2022,
     mission: "Brindar atención médica de calidad con compasión y excelencia.",
   };
