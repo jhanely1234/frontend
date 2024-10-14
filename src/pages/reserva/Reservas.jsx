@@ -18,7 +18,11 @@ import moment from "moment";
 import locale from "antd/es/date-picker/locale/es_ES";
 import { PDFViewer } from "@react-pdf/renderer";
 import PrescriptionPDF from "./RecetaPDF";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
+// Inicializa el contenedor de toast
+toast.configure();
 const { Option } = Select;
 
 export default function Reservas() {
@@ -197,9 +201,33 @@ export default function Reservas() {
     }
   };
 
-  const handleAtenderReserva = async (id) => {
+  const handleAtenderReserva = async (id, reserva) => {
+    const fechaActual = moment(); // Obtener la fecha y hora actual
+    const fechaReserva = moment(reserva.fechaReserva); // Fecha de la reserva
+    const horaInicioReserva = moment(reserva.horaInicio, "HH:mm"); // Hora de inicio de la reserva
+    const horaFinReserva = moment(reserva.horaFin, "HH:mm"); // Hora de fin de la reserva
+
+    // Verificar si la fecha actual coincide con la fecha de la reserva
+    const fechaCoincide = fechaActual.isSame(fechaReserva, 'day');
+
+    // Verificar si la hora actual está dentro del rango de horas de la reserva
+    const horaCoincide =
+      fechaActual.isBetween(horaInicioReserva, horaFinReserva, null, '[)');
+
+    if (!fechaCoincide || !horaCoincide) {
+      // Mostrar advertencia si la fecha u hora no coinciden
+      const continuar = window.confirm(
+        "Está intentando atender fuera de la fecha u hora de la reserva. ¿Desea continuar?"
+      );
+      if (!continuar) {
+        return; // Cancelar la acción si el usuario elige "No"
+      }
+    }
+
+    // Si todo está correcto o el usuario eligió continuar, proceder a la atención
     navigate(`/medico/consultas/crear/${id}`);
   };
+
 
   const handleconfirmarReservaMedico = async (
     reservaId,
@@ -578,7 +606,7 @@ export default function Reservas() {
                       )}
                       {reserva.estadoConfirmacionMedico === "confirmado" && (
                         <button
-                          onClick={() => handleAtenderReserva(reserva._id)}
+                          onClick={() => handleAtenderReserva(reserva._id, reserva)}
                           className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition duration-300"
                         >
                           Atender
