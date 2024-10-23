@@ -40,7 +40,8 @@ export default function Reservas() {
   const [calificacion, setCalificacion] = useState(null);
   const [showCalificarModal, setShowCalificarModal] = useState(false);
   const [consultaId, setConsultaId] = useState(null);
-  const [filtroHoyActivado, setFiltroHoyActivado] = useState(false);
+  const [filtroFecha, setFiltroFecha] = useState("todas");
+  const [fechaEspecifica, setFechaEspecifica] = useState(null);
   const navigate = useNavigate();
   const {
     auth: { roles, _id },
@@ -122,17 +123,57 @@ export default function Reservas() {
         (!filters.estado || reserva.estado_reserva === filters.estado)
     );
 
-    if (filtroHoyActivado) {
-      result = result.filter(
-        (reserva) => reserva.fechaReserva.split("T")[0] === fechaActual
-      );
+    if (roles.some((role) => role.name === "medico")) {
+      switch (filtroFecha) {
+        case "hoy":
+          result = result.filter(
+            (reserva) => reserva.fechaReserva.split("T")[0] === fechaActual
+          );
+          break;
+        case "manana":
+          const manana = moment().add(1, 'days').format("YYYY-MM-DD");
+          result = result.filter(
+            (reserva) => reserva.fechaReserva.split("T")[0] === manana
+          );
+          break;
+        case "proximos3dias":
+          const tresDiasDespues = moment().add(3, 'days').format("YYYY-MM-DD");
+          result = result.filter(
+            (reserva) => moment(reserva.fechaReserva.split("T")[0]).isBetween(fechaActual, tresDiasDespues, null, '[]')
+          );
+          break;
+        case "proximos7dias":
+          const sieteDiasDespues = moment().add(7, 'days').format("YYYY-MM-DD");
+          result = result.filter(
+            (reserva) => moment(reserva.fechaReserva.split("T")[0]).isBetween(fechaActual, sieteDiasDespues, null, '[]')
+          );
+          break;
+        case "fechaEspecifica":
+          if (fechaEspecifica) {
+            result = result.filter(
+              (reserva) => reserva.fechaReserva.split("T")[0] === fechaEspecifica.format("YYYY-MM-DD")
+            );
+          }
+          break;
+        default:
+          // No aplicar filtro adicional
+          break;
+      }
     }
 
     return result;
-  }, [reservas, filters, fuse, filtroHoyActivado, fechaActual]);
+  }, [reservas, filters, fuse, filtroFecha, fechaEspecifica, fechaActual, roles]);
 
-  const handleToggleFiltroHoy = () => {
-    setFiltroHoyActivado(!filtroHoyActivado);
+  const handleFiltroFechaChange = (value) => {
+    setFiltroFecha(value);
+    if (value !== "fechaEspecifica") {
+      setFechaEspecifica(null);
+    }
+  };
+
+  const handleFechaEspecificaChange = (date) => {
+    setFechaEspecifica(date);
+    setFiltroFecha("fechaEspecifica");
   };
 
   const handleViewProfile = async (id) => {
@@ -218,13 +259,22 @@ export default function Reservas() {
     try {
       const response = await confirmarReservaMedico(reservaId, estadoConfirmacionMedico);
       if (response.response === "success") {
-        await fetchReservas();
+        setReservas(prevReservas =>
+          prevReservas.map(reserva =>
+            reserva._id === reservaId
+              ? { ...reserva, estadoConfirmacionMedico, estado_reserva: estadoConfirmacionMedico === "confirmado" ? "pendiente" : "cancelado" }
+              : reserva
+          )
+        );
+
         if (estadoConfirmacionMedico === "cancelado") {
           const reserva = reservas.find((r) => r._id === reservaId);
           setReservaAReprogramar(reserva);
           await fetchCalendario(reserva.medico._id, reserva.especialidad_solicitada._id);
           setShowReprogramModal(true);
         }
+
+        message.success(`Reserva ${estadoConfirmacionMedico === "confirmado" ? "confirmada" : "cancelada"} con éxito`);
       } else {
         throw new Error(response.message || "Error al procesar la reserva");
       }
@@ -313,7 +363,7 @@ export default function Reservas() {
   if (authLoading || loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-32 w-32  border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
@@ -366,12 +416,29 @@ export default function Reservas() {
             Nueva Reserva
           </Link>
         )}
-        <button
-          onClick={handleToggleFiltroHoy}
-          className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300 ease-in-out flex items-center  text-sm"
-        >
-          {filtroHoyActivado ? "Quitar Filtro" : "Ver Reservas de Hoy"}
-        </button>
+        {roles.some((role) => role.name === "medico") && (
+          <div className="flex items-center space-x-2">
+            <Select
+              value={filtroFecha}
+              onChange={handleFiltroFechaChange}
+              className="w-48"
+            >
+              <Option value="todas">Todas las reservas</Option>
+              <Option value="hoy">Reservas de hoy</Option>
+              <Option value="manana">Reservas de mañana</Option>
+              <Option value="proximos3dias">Próximos 3 días</Option>
+              <Option value="proximos7dias">Próximos 7 días</Option>
+              <Option value="fechaEspecifica">Fecha específica</Option>
+            </Select>
+            {filtroFecha === "fechaEspecifica" && (
+              <DatePicker
+                value={fechaEspecifica}
+                onChange={handleFechaEspecificaChange}
+                className="w-40"
+              />
+            )}
+          </div>
+        )}
         <button
           onClick={() => setShowFilters(!showFilters)}
           className="bg-gray-200 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-300 transition duration-300 ease-in-out flex items-center text-sm"
@@ -413,14 +480,6 @@ export default function Reservas() {
             value={filters.especialidad}
             onChange={(e) =>
               setFilters({ ...filters, especialidad: e.target.value })
-            }
-            className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="date"
-            value={filters.fechaReserva}
-            onChange={(e) =>
-              setFilters({ ...filters, fechaReserva: e.target.value })
             }
             className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -467,13 +526,7 @@ export default function Reservas() {
               {reserva.especialidad_solicitada.name}
             </p>
             <p className="text-sm text-gray-700 mb-2">
-              {new Date(reserva.fechaReserva)
-                .toISOString()
-                .split("T")[0]
-                .split("-")
-                .reverse()
-                .join("/")}{" "}
-              - {reserva.horaInicio}
+              {new Date(reserva.fechaReserva).toLocaleDateString()} - {reserva.horaInicio}
             </p>
 
             {roles.some((role) => role.name === "paciente") &&
@@ -571,17 +624,20 @@ export default function Reservas() {
                   {roles.some((role) => role.name === "medico") && (
                     <>
                       {reserva.estadoConfirmacionMedico === "pendiente" && (
-                        <button
-                          onClick={() =>
-                            handleconfirmarReservaMedico(
-                              reserva._id,
-                              "confirmado"
-                            )
-                          }
-                          className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition duration-300"
-                        >
-                          Confirmar
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleconfirmarReservaMedico(reserva._id, "confirmado")}
+                            className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition duration-300 mr-2"
+                          >
+                            Confirmar
+                          </button>
+                          <button
+                            onClick={() => handleconfirmarReservaMedico(reserva._id, "cancelado")}
+                            className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition duration-300"
+                          >
+                            Cancelar
+                          </button>
+                        </>
                       )}
                       {reserva.estadoConfirmacionMedico === "confirmado" && (
                         <button
@@ -591,18 +647,8 @@ export default function Reservas() {
                           Atender
                         </button>
                       )}
-                      {reserva.estado_reserva !== "cancelado" && (
-                        <button
-                          onClick={() =>
-                            handleconfirmarReservaMedico(
-                              reserva._id,
-                              "cancelado"
-                            )
-                          }
-                          className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition duration-300"
-                        >
-                          Cancelar
-                        </button>
+                      {reserva.estadoConfirmacionMedico === "cancelado" && (
+                        <span className="text-red-500">Cancelado</span>
                       )}
                     </>
                   )}
@@ -637,7 +683,7 @@ export default function Reservas() {
         onCancel={() => setShowCalificarModal(false)}
         onOk={handleCalificar}
       >
-        <p>Selecciona una calificación (1 a 5 estrellas):</p>
+        <p>Selecciona una calific ación (1 a 5 estrellas):</p>
         <Rate
           value={calificacion}
           onChange={(value) => setCalificacion(value)}
@@ -668,12 +714,7 @@ export default function Reservas() {
               </p>
               <p>
                 <span className="font-semibold">Fecha de la Reserva:</span>{" "}
-                {new Date(selectedReserva.fechaReserva)
-                  .toISOString()
-                  .split("T")[0]
-                  .split("-")
-                  .reverse()
-                  .join("/")}
+                {new Date(selectedReserva.fechaReserva).toLocaleDateString()}
               </p>
               <p>
                 <span className="font-semibold">Hora Inicio:</span>{" "}
