@@ -45,12 +45,11 @@ const App = () => {
         pauseOnHover
       />
       <Routes>
-        <Route path="/auth" element={<AuthLayout />}>
-          <Route path="login" element={<LoginPage />} />
-          <Route path="registro" element={<RegisterPage />} />
-          <Route path="forgot-password" element={<PasswordPage />} />
-          <Route path="reset-password" element={<PasswordResetPage />} />
-        </Route>
+          <Route path="/auth/login" element={<LoginPage />} />
+          <Route path="/auth/registro" element={<RegisterPage />} />
+          <Route path="/auth/forgot-password" element={<PasswordPage />} />
+          <Route path="/auth/reset-password" element={<PasswordResetPage />} />
+
         <Route path="/" element={<Wrapper />}>
           <Route
             index
