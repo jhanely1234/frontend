@@ -1,13 +1,17 @@
 import axios from "axios";
-import { toast } from "react-toastify"; // Importar react-toastify
+import { toast } from "react-toastify";
+import { confirmAlert } from "react-confirm-alert"; // Importa react-confirm-alert
+import "react-confirm-alert/src/react-confirm-alert.css"; // Importa los estilos
 
 // URL del servidor usando variable de entorno de Vite
-let serverPrimary = `${import.meta.env.VITE_URL_MICROSERVICE_PACIENTE}/paciente`;
+let serverPrimary = `${
+  import.meta.env.VITE_URL_MICROSERVICE_PACIENTE
+}/paciente`;
 let currentServer = serverPrimary; // Servidor actual
 
 // Crear una instancia de Axios
 const api = axios.create({
-  baseURL: serverPrimary,
+  baseURL: serverPrimary
 });
 
 // Función para verificar la disponibilidad del servidor, considerando el token
@@ -16,8 +20,8 @@ const checkServerAvailability = async (url) => {
   try {
     await axios.get(url, {
       headers: {
-        Authorization: `Bearer ${token}`,
-      },
+        Authorization: `Bearer ${token}`
+      }
     });
     return true;
   } catch (error) {
@@ -33,17 +37,14 @@ const initializeServerConnection = async () => {
     currentServer = serverPrimary;
   } else {
     console.error("El microservicio de pacientes no está disponible.");
-    toast.error(
-      "El microservicio de pacientes no está disponible.",
-      {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      }
-    );
+    toast.error("El microservicio de pacientes no está disponible.", {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true
+    });
   }
 };
 
@@ -79,7 +80,7 @@ export const obtenerTodosPacientes = async () => {
         hideProgressBar: true,
         closeOnClick: true,
         pauseOnHover: true,
-        draggable: true,
+        draggable: true
       }
     );
     return Promise.reject(error);
@@ -99,7 +100,7 @@ export const obtenerPacientePorId = async (id) => {
         hideProgressBar: true,
         closeOnClick: true,
         pauseOnHover: true,
-        draggable: true,
+        draggable: true
       }
     );
     return Promise.reject(error);
@@ -115,7 +116,7 @@ export const crearPaciente = async (datosPaciente) => {
       hideProgressBar: true,
       closeOnClick: true,
       pauseOnHover: true,
-      draggable: true,
+      draggable: true
     });
     return respuesta.data;
   } catch (error) {
@@ -127,7 +128,7 @@ export const crearPaciente = async (datosPaciente) => {
         hideProgressBar: true,
         closeOnClick: true,
         pauseOnHover: true,
-        draggable: true,
+        draggable: true
       }
     );
     return Promise.reject(error);
@@ -143,7 +144,7 @@ export const actualizarPaciente = async (id, datosPaciente) => {
       hideProgressBar: true,
       closeOnClick: true,
       pauseOnHover: true,
-      draggable: true,
+      draggable: true
     });
     return respuesta.data;
   } catch (error) {
@@ -156,7 +157,7 @@ export const actualizarPaciente = async (id, datosPaciente) => {
         hideProgressBar: true,
         closeOnClick: true,
         pauseOnHover: true,
-        draggable: true,
+        draggable: true
       }
     );
     return Promise.reject(error);
@@ -164,38 +165,57 @@ export const actualizarPaciente = async (id, datosPaciente) => {
 };
 
 export const eliminarPaciente = async (id) => {
-  const confirmacion = window.confirm(
-    "¿Estás seguro de que quieres eliminar este paciente? ¡Esta acción no se puede deshacer!"
-  );
-
-  if (confirmacion) {
-    try {
-      const respuesta = await api.delete(`/${id}`);
-      toast.success("Paciente eliminado correctamente", {
-        position: "bottom-right",
-        autoClose: 5000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
-      return respuesta.data;
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message ||
-          "Ocurrió un error al eliminar el paciente.",
-        {
-          position: "bottom-right",
-          autoClose: 5000,
-          hideProgressBar: true,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
+  confirmAlert({
+    title: "Confirmar eliminación",
+    message:
+      "¿Estás seguro de que quieres eliminar este paciente? ¡Esta acción no se puede deshacer!",
+    buttons: [
+      {
+        label: "Sí",
+        onClick: async () => {
+          try {
+            const respuesta = await api.delete(`/${id}`);
+            toast.success("Paciente eliminado correctamente", {
+              position: "bottom-right",
+              autoClose: 5000,
+              hideProgressBar: true,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true
+            });
+            return respuesta.data;
+          } catch (error) {
+            toast.error(
+              error.response?.data?.message ||
+                "Ocurrió un error al eliminar el paciente.",
+              {
+                position: "bottom-right",
+                autoClose: 5000,
+                hideProgressBar: true,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true
+              }
+            );
+            return Promise.reject(error);
+          }
         }
-      );
-      return Promise.reject(error);
-    }
-  }
+      },
+      {
+        label: "No",
+        onClick: () => {
+          toast.info("Eliminación cancelada", {
+            position: "bottom-right",
+            autoClose: 3000,
+            hideProgressBar: true,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true
+          });
+        }
+      }
+    ]
+  });
 };
 
 export default api;

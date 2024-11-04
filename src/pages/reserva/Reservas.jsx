@@ -7,7 +7,7 @@ import {
   confirmarReservaMedico,
   crearReserva,
   obtenerCalendario,
-  calificarConsulta,
+  calificarConsulta
 } from "../../api/reservaapi";
 import { obtenerHistorialPorReservaId } from "../../api/historialapi";
 import { Link, useNavigate } from "react-router-dom";
@@ -18,6 +18,10 @@ import moment from "moment";
 import locale from "antd/es/date-picker/locale/es_ES";
 import { PDFViewer } from "@react-pdf/renderer";
 import PrescriptionPDF from "./RecetaPDF";
+
+import { confirmAlert } from "react-confirm-alert"; // Importa react-confirm-alert
+import "react-confirm-alert/src/react-confirm-alert.css"; // Importa los estilos de confirmación
+import { toast } from "react-toastify"; // Importa react-toastify
 
 const { Option } = Select;
 
@@ -45,7 +49,7 @@ export default function Reservas() {
   const navigate = useNavigate();
   const {
     auth: { roles, _id },
-    isLoading: authLoading,
+    isLoading: authLoading
   } = useAuth();
 
   const [filters, setFilters] = useState({
@@ -53,7 +57,7 @@ export default function Reservas() {
     medico: "",
     especialidad: "",
     fechaReserva: "",
-    estado: "",
+    estado: ""
   });
 
   const fechaActual = moment().format("YYYY-MM-DD");
@@ -99,10 +103,10 @@ export default function Reservas() {
         "paciente.lastname",
         "medico.name",
         "medico.lastname",
-        "especialidad_solicitada.name",
+        "especialidad_solicitada.name"
       ],
       threshold: 0.3,
-      includeScore: true,
+      includeScore: true
     });
   }, [reservas]);
 
@@ -131,27 +135,39 @@ export default function Reservas() {
           );
           break;
         case "manana":
-          const manana = moment().add(1, 'days').format("YYYY-MM-DD");
+          const manana = moment().add(1, "days").format("YYYY-MM-DD");
           result = result.filter(
             (reserva) => reserva.fechaReserva.split("T")[0] === manana
           );
           break;
         case "proximos3dias":
-          const tresDiasDespues = moment().add(3, 'days').format("YYYY-MM-DD");
-          result = result.filter(
-            (reserva) => moment(reserva.fechaReserva.split("T")[0]).isBetween(fechaActual, tresDiasDespues, null, '[]')
+          const tresDiasDespues = moment().add(3, "days").format("YYYY-MM-DD");
+          result = result.filter((reserva) =>
+            moment(reserva.fechaReserva.split("T")[0]).isBetween(
+              fechaActual,
+              tresDiasDespues,
+              null,
+              "[]"
+            )
           );
           break;
         case "proximos7dias":
-          const sieteDiasDespues = moment().add(7, 'days').format("YYYY-MM-DD");
-          result = result.filter(
-            (reserva) => moment(reserva.fechaReserva.split("T")[0]).isBetween(fechaActual, sieteDiasDespues, null, '[]')
+          const sieteDiasDespues = moment().add(7, "days").format("YYYY-MM-DD");
+          result = result.filter((reserva) =>
+            moment(reserva.fechaReserva.split("T")[0]).isBetween(
+              fechaActual,
+              sieteDiasDespues,
+              null,
+              "[]"
+            )
           );
           break;
         case "fechaEspecifica":
           if (fechaEspecifica) {
             result = result.filter(
-              (reserva) => reserva.fechaReserva.split("T")[0] === fechaEspecifica.format("YYYY-MM-DD")
+              (reserva) =>
+                reserva.fechaReserva.split("T")[0] ===
+                fechaEspecifica.format("YYYY-MM-DD")
             );
           }
           break;
@@ -162,7 +178,15 @@ export default function Reservas() {
     }
 
     return result;
-  }, [reservas, filters, fuse, filtroFecha, fechaEspecifica, fechaActual, roles]);
+  }, [
+    reservas,
+    filters,
+    fuse,
+    filtroFecha,
+    fechaEspecifica,
+    fechaActual,
+    roles
+  ]);
 
   const handleFiltroFechaChange = (value) => {
     setFiltroFecha(value);
@@ -215,14 +239,56 @@ export default function Reservas() {
   };
 
   const handleDeleteReserva = async (id) => {
-    if (window.confirm("¿Está seguro que desea eliminar esta reserva?")) {
-      try {
-        await eliminarReserva(id);
-        setReservas(reservas.filter((reserva) => reserva._id !== id));
-      } catch (error) {
-        console.error("Error deleting reserva:", error);
-      }
-    }
+    confirmAlert({
+      title: "Confirmar eliminación",
+      message: "¿Está seguro que desea eliminar esta reserva?",
+      buttons: [
+        {
+          label: "Sí",
+          onClick: async () => {
+            try {
+              await eliminarReserva(id);
+              setReservas(reservas.filter((reserva) => reserva._id !== id));
+              toast.success("Reserva eliminada correctamente", {
+                position: "bottom-right",
+                autoClose: 5000,
+                hideProgressBar: true,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true
+              });
+            } catch (error) {
+              console.error("Error al eliminar la reserva:", error);
+              toast.error(
+                error.response?.data?.message ||
+                  "Ocurrió un error al eliminar la reserva.",
+                {
+                  position: "bottom-right",
+                  autoClose: 5000,
+                  hideProgressBar: true,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true
+                }
+              );
+            }
+          }
+        },
+        {
+          label: "No",
+          onClick: () => {
+            toast.info("Eliminación cancelada", {
+              position: "bottom-right",
+              autoClose: 3000,
+              hideProgressBar: true,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true
+            });
+          }
+        }
+      ]
+    });
   };
 
   const handleUpdateEstado = async (id, nuevoEstado) => {
@@ -240,29 +306,65 @@ export default function Reservas() {
     const horaInicioReserva = moment(reserva.horaInicio, "HH:mm");
     const horaFinReserva = moment(reserva.horaFin, "HH:mm");
 
-    const fechaCoincide = fechaActual.isSame(fechaReserva, 'day');
-    const horaCoincide = fechaActual.isBetween(horaInicioReserva, horaFinReserva, null, '[)');
+    const fechaCoincide = fechaActual.isSame(fechaReserva, "day");
+    const horaCoincide = fechaActual.isBetween(
+      horaInicioReserva,
+      horaFinReserva,
+      null,
+      "[)"
+    );
 
     if (!fechaCoincide || !horaCoincide) {
-      const continuar = window.confirm(
-        "Está intentando atender fuera de la fecha u hora de la reserva. ¿Desea continuar?"
-      );
-      if (!continuar) {
-        return;
-      }
+      confirmAlert({
+        title: "Atención fuera de horario",
+        message:
+          "Está intentando atender fuera de la fecha u hora de la reserva. ¿Desea continuar?",
+        buttons: [
+          {
+            label: "Sí",
+            onClick: () => navigate(`/medico/consultas/crear/${id}`)
+          },
+          {
+            label: "No",
+            onClick: () => {
+              toast.info("Atención cancelada", {
+                position: "bottom-right",
+                autoClose: 3000,
+                hideProgressBar: true,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true
+              });
+            }
+          }
+        ]
+      });
+    } else {
+      navigate(`/medico/consultas/crear/${id}`);
     }
-
-    navigate(`/medico/consultas/crear/${id}`);
   };
 
-  const handleconfirmarReservaMedico = async (reservaId, estadoConfirmacionMedico) => {
+  const handleconfirmarReservaMedico = async (
+    reservaId,
+    estadoConfirmacionMedico
+  ) => {
     try {
-      const response = await confirmarReservaMedico(reservaId, estadoConfirmacionMedico);
+      const response = await confirmarReservaMedico(
+        reservaId,
+        estadoConfirmacionMedico
+      );
       if (response.response === "success") {
-        setReservas(prevReservas =>
-          prevReservas.map(reserva =>
+        setReservas((prevReservas) =>
+          prevReservas.map((reserva) =>
             reserva._id === reservaId
-              ? { ...reserva, estadoConfirmacionMedico, estado_reserva: estadoConfirmacionMedico === "confirmado" ? "pendiente" : "cancelado" }
+              ? {
+                  ...reserva,
+                  estadoConfirmacionMedico,
+                  estado_reserva:
+                    estadoConfirmacionMedico === "confirmado"
+                      ? "pendiente"
+                      : "cancelado"
+                }
               : reserva
           )
         );
@@ -270,11 +372,20 @@ export default function Reservas() {
         if (estadoConfirmacionMedico === "cancelado") {
           const reserva = reservas.find((r) => r._id === reservaId);
           setReservaAReprogramar(reserva);
-          await fetchCalendario(reserva.medico._id, reserva.especialidad_solicitada._id);
+          await fetchCalendario(
+            reserva.medico._id,
+            reserva.especialidad_solicitada._id
+          );
           setShowReprogramModal(true);
         }
 
-        message.success(`Reserva ${estadoConfirmacionMedico === "confirmado" ? "confirmada" : "cancelada"} con éxito`);
+        message.success(
+          `Reserva ${
+            estadoConfirmacionMedico === "confirmado"
+              ? "confirmada"
+              : "cancelada"
+          } con éxito`
+        );
       } else {
         throw new Error(response.message || "Error al procesar la reserva");
       }
@@ -302,7 +413,9 @@ export default function Reservas() {
     const selectedDate = date.format("YYYY-MM-DD");
     setNuevaFechaReserva(selectedDate);
 
-    const disponibilidadesDia = calendario.find((dia) => dia.fecha === selectedDate);
+    const disponibilidadesDia = calendario.find(
+      (dia) => dia.fecha === selectedDate
+    );
     if (disponibilidadesDia) {
       const intervalosLibres = disponibilidadesDia.intervalos.filter(
         (intervalo) => intervalo.estado === "LIBRE"
@@ -327,7 +440,7 @@ export default function Reservas() {
         especialidadId: reservaAReprogramar.especialidad_solicitada._id,
         fechaReserva: nuevaFechaReserva,
         horaInicio: nuevaHoraInicio,
-        motivoCancelacion,
+        motivoCancelacion
       };
 
       await crearReserva(nuevaReserva);
@@ -347,7 +460,14 @@ export default function Reservas() {
 
   const handleCalificar = async () => {
     if (!calificacion || calificacion < 1 || calificacion > 5) {
-      alert("Por favor, selecciona una calificación entre 1 y 5");
+      toast.error("Por favor, selecciona una calificación entre 1 y 5", {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      });
       return;
     }
 
@@ -355,8 +475,24 @@ export default function Reservas() {
       await calificarConsulta(consultaId, calificacion);
       setShowCalificarModal(false);
       await fetchReservas();
+      toast.success("Consulta calificada con éxito", {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      });
     } catch (error) {
       console.error("Error al calificar:", error);
+      toast.error("Error al calificar la consulta", {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      });
     }
   };
 
@@ -469,7 +605,7 @@ export default function Reservas() {
               setFilters({
                 ...filters,
                 paciente: e.target.value,
-                medico: e.target.value,
+                medico: e.target.value
               })
             }
             className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -512,12 +648,13 @@ export default function Reservas() {
                 </p>
               </div>
               <span
-                className={`px-2 py-1 text-xs font-semibold rounded-full ${reserva.estado_reserva === "atendido"
+                className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                  reserva.estado_reserva === "atendido"
                     ? "bg-green-100 text-green-800"
                     : reserva.estado_reserva === "cancelado"
-                      ? "bg-red-100 text-red-800"
-                      : "bg-yellow-100 text-yellow-800"
-                  }`}
+                    ? "bg-red-100 text-red-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
               >
                 {reserva.estado_reserva}
               </span>
@@ -526,7 +663,8 @@ export default function Reservas() {
               {reserva.especialidad_solicitada.name}
             </p>
             <p className="text-sm text-gray-700 mb-2">
-              {new Date(reserva.fechaReserva).toLocaleDateString()} - {reserva.horaInicio}
+              {new Date(reserva.fechaReserva).toLocaleDateString()} -{" "}
+              {reserva.horaInicio}
             </p>
 
             {roles.some((role) => role.name === "paciente") &&
@@ -535,7 +673,9 @@ export default function Reservas() {
               reserva.consulta.calificacion === 0 && (
                 <div className="mt-2">
                   <button
-                    onClick={() => handleOpenCalificarModal(reserva.consulta._id)}
+                    onClick={() =>
+                      handleOpenCalificarModal(reserva.consulta._id)
+                    }
                     className="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 transition duration-300 ease-in-out w-full"
                   >
                     Calificar Consulta
@@ -587,52 +727,62 @@ export default function Reservas() {
                     (role) =>
                       role.name === "admin" || role.name === "recepcionista"
                   ) && (
-                      <>
-                        <button
-                          onClick={() => handleEditProfile(reserva._id)}
-                          className="text-green-600 hover:text-green-800 transition duration-300"
+                    <>
+                      <button
+                        onClick={() => handleEditProfile(reserva._id)}
+                        className="text-green-600 hover:text-green-800 transition duration-300"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
                         >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteReserva(reserva._id)}
-                          className="text-red-600 hover:text-red-800 transition duration-300"
+                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteReserva(reserva._id)}
+                        className="text-red-600 hover:text-red-800 transition duration-300"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
                         >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </button>
-                      </>
-                    )}
+                          <path
+                            fillRule="evenodd"
+                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </>
+                  )}
 
                   {roles.some((role) => role.name === "medico") && (
                     <>
                       {reserva.estadoConfirmacionMedico === "pendiente" && (
                         <>
                           <button
-                            onClick={() => handleconfirmarReservaMedico(reserva._id, "confirmado")}
+                            onClick={() =>
+                              handleconfirmarReservaMedico(
+                                reserva._id,
+                                "confirmado"
+                              )
+                            }
                             className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition duration-300 mr-2"
                           >
                             Confirmar
                           </button>
                           <button
-                            onClick={() => handleconfirmarReservaMedico(reserva._id, "cancelado")}
+                            onClick={() =>
+                              handleconfirmarReservaMedico(
+                                reserva._id,
+                                "cancelado"
+                              )
+                            }
                             className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition duration-300"
                           >
                             Cancelar
@@ -641,7 +791,9 @@ export default function Reservas() {
                       )}
                       {reserva.estadoConfirmacionMedico === "confirmado" && (
                         <button
-                          onClick={() => handleAtenderReserva(reserva._id, reserva)}
+                          onClick={() =>
+                            handleAtenderReserva(reserva._id, reserva)
+                          }
                           className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition duration-300"
                         >
                           Atender
@@ -683,7 +835,7 @@ export default function Reservas() {
         onCancel={() => setShowCalificarModal(false)}
         onOk={handleCalificar}
       >
-        <p>Selecciona una calific ación (1 a 5 estrellas):</p>
+        <p>Selecciona una calificación (1 a 5 estrellas):</p>
         <Rate
           value={calificacion}
           onChange={(value) => setCalificacion(value)}
@@ -817,7 +969,9 @@ export default function Reservas() {
         </div>
 
         <div className="mb-4">
-          <h2 className="text-xl font-bold mb-4">Seleccione nueva fecha y hora:</h2>
+          <h2 className="text-xl font-bold mb-4">
+            Seleccione nueva fecha y hora:
+          </h2>
           <DatePicker
             onChange={handleDateChange}
             disabledDate={(current) => {
@@ -836,8 +990,9 @@ export default function Reservas() {
 
               return (
                 <div
-                  className={`ant-picker-cell-inner ${tieneDisponibilidad ? "bg-green-500" : "bg-red-500"
-                    } text-white`}
+                  className={`ant-picker-cell-inner ${
+                    tieneDisponibilidad ? "bg-green-500" : "bg-red-500"
+                  } text-white`}
                 >
                   {current.date()}
                 </div>

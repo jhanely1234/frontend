@@ -109,7 +109,7 @@ export default function DoctorEditModal({ closeModal, user }) {
 
     return (
         <div>
-            <h2 className="text-xl font-bold mb-4">Editar Perfil Médico</h2>
+            <p className="text-lg">{user.name} {user.lastname}</p>
 
             {/* Pregunta si quiere modificar especialidades y disponibilidad */}
             <div className="mb-6">

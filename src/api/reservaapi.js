@@ -147,13 +147,8 @@ export const actualizarReserva = async (id, datosReserva) => {
 export const eliminarReserva = async (id) => {
   try {
     const respuesta = await api.delete(`/${id}`);
-    mostrarToast("success", "Reserva eliminada exitosamente");
     return respuesta.data;
   } catch (error) {
-    mostrarToast(
-      "error",
-      error.response?.data?.message || "Error al eliminar reserva"
-    );
     throw error;
   }
 };

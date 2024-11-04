@@ -24,7 +24,7 @@ export default function BasicEditModal({ closeModal, user }) {
 
     return (
         <div>
-            <h2 className="text-xl font-bold mb-4">Editar Perfil</h2>
+            <p className="text-lg">{user.name} {user.lastname}</p>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div>
                     <label>Email</label>
