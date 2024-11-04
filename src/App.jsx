@@ -267,7 +267,6 @@ const App = () => {
                 />
               }
             />
-
           </Route>
         </Route>
         <Route path="*" element={<NotFoundPage />} />

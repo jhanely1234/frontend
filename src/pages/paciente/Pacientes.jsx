@@ -54,7 +54,7 @@ export default function Pacientes() {
       await eliminarPaciente(id);
       setPacientes(pacientes.filter((paciente) => paciente._id !== id));
     } catch (error) {
-      console.error("Error deleting paciente:", error);
+      console.error("Error al eliminar el paciente:", error);
     }
   };
 
