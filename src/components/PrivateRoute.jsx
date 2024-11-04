@@ -71,8 +71,9 @@ const PrivateRoute = ({ element: Element, allowedRoles, ...rest }) => {
     return <Element {...rest} />;
   }
 
-  // Si el usuario no tiene acceso, redirige a una página de acceso denegado o a la raíz
+  // Si el usuario no tiene acceso, redirige a la página principal
   return <Navigate to="/" />;
 };
+
 
 export default PrivateRoute;

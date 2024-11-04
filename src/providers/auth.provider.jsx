@@ -12,7 +12,7 @@ const AuthProvider = ({ children }) => {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        setIsLoading(false); // No hay token, ya podemos detener el loading
+        setIsLoading(false);
         return;
       }
 
@@ -25,15 +25,15 @@ const AuthProvider = ({ children }) => {
 
       try {
         const { data } = await axiosClient.get("/auth/me", config);
-        setAuth(data); // Establecer los datos del usuario autenticado
+        setAuth(data); // Establece los datos del usuario autenticado desde la respuesta del servidor
       } catch (error) {
-        setAuth({}); // Limpiar la autenticación en caso de error
+        setAuth({}); // Limpia la autenticación en caso de error
       } finally {
-        setIsLoading(false); // Termina de cargar
+        setIsLoading(false);
       }
     };
 
-    authenticateUser();
+    authenticateUser(); // Llama a la función para cargar los datos al montar el componente
   }, []);
 
   return (
