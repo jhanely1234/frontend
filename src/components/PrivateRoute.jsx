@@ -53,7 +53,7 @@ const PrivateRoute = ({ element: Element, allowedRoles, ...rest }) => {
     isLoading,
   } = useAuth();
 
-  const token = localStorage.getItem("token"); // Asumiendo que el token está en localStorage
+  const token = localStorage.getItem("token");
 
   // Si la aplicación está cargando los datos del usuario
   if (isLoading) return <LoadingSpinner />;
@@ -63,11 +63,16 @@ const PrivateRoute = ({ element: Element, allowedRoles, ...rest }) => {
     return <Navigate to="/auth/login" />;
   }
 
-  // Si hay token, verifica si el usuario tiene roles permitidos
+  // Verifica si el usuario tiene roles permitidos
   const hasAccess = roles?.some((role) => allowedRoles.includes(role.name));
 
   // Si el usuario tiene acceso, renderiza el componente correspondiente
-  return hasAccess ? <Element {...rest} /> : <Navigate to="/" />;
+  if (hasAccess) {
+    return <Element {...rest} />;
+  }
+
+  // Si el usuario no tiene acceso, redirige a una página de acceso denegado o a la raíz
+  return <Navigate to="/" />;
 };
 
 export default PrivateRoute;
